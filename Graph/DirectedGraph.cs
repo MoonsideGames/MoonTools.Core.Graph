@@ -10,63 +10,67 @@ namespace MoonTools.Core.Graph
         finish
     }
 
-    public class DirectedGraph<T>
+    public class DirectedGraph<TNode, TEdgeData> : IGraph<TNode, TEdgeData>
     {
-        private class SimpleCycleComparer : IEqualityComparer<IEnumerable<T>>
+        protected HashSet<TNode> nodes = new HashSet<TNode>();
+        protected HashSet<(TNode, TNode)> edges = new HashSet<(TNode, TNode)>();
+        protected Dictionary<(TNode, TNode), TEdgeData> edgesToEdgeData = new Dictionary<(TNode, TNode), TEdgeData>();
+        protected Dictionary<TNode, HashSet<TNode>> neighbors = new Dictionary<TNode, HashSet<TNode>>();
+
+        private class SimpleCycleComparer : IEqualityComparer<IEnumerable<TNode>>
         {
-            public bool Equals(IEnumerable<T> x, IEnumerable<T> y)
+            public bool Equals(IEnumerable<TNode> x, IEnumerable<TNode> y)
             {
                 return x.SequenceEqual(y);
             }
 
-            public int GetHashCode(IEnumerable<T> obj)
+            public int GetHashCode(IEnumerable<TNode> obj)
             {
                 return obj.Aggregate(0, (current, next) => current.GetHashCode() ^ next.GetHashCode());
             }
         }
 
-        protected List<T> _vertices = new List<T>();
-        protected Dictionary<T, HashSet<T>> _neighbors = new Dictionary<T, HashSet<T>>();
+        public IEnumerable<TNode> Nodes { get { return nodes; } }
+        public IEnumerable<(TNode, TNode)> Edges { get { return edges; } }
 
-        public IEnumerable<T> Vertices { get { return _vertices; } }
-
-        /*
-         * GRAPH STRUCTURE METHODS
-         */
-
-        public void AddVertex(T vertex)
+        public bool Exists(TNode node)
         {
-            if (!VertexExists(vertex))
+            return nodes.Contains(node);
+        }
+
+        public bool Exists((TNode, TNode) edge)
+        {
+            return edges.Contains(edge);
+        }
+
+        public void AddNode(TNode node)
+        {
+            if (!Exists(node))
             {
-                _vertices.Add(vertex);
-                _neighbors.Add(vertex, new HashSet<T>());
+                nodes.Add(node);
+                neighbors.Add(node, new HashSet<TNode>());
             }
         }
 
-        public void AddVertices(params T[] vertices)
+        public void AddNodes(params TNode[] nodes)
         {
-            foreach (var vertex in vertices)
+            foreach (var node in nodes)
             {
-                AddVertex(vertex);
+                AddNode(node);
             }
         }
 
-        public bool VertexExists(T vertex)
+        public void RemoveNode(TNode node)
         {
-            return Vertices.Contains(vertex);
-        }
+            var edgesToRemove = new List<(TNode, TNode)>();
 
-        public void RemoveVertex(T vertex)
-        {
-            var edgesToRemove = new List<Tuple<T, T>>();
-
-            if (VertexExists(vertex))
+            if (Exists(node))
             {
-                foreach (var entry in _neighbors)
+                foreach (var entry in neighbors)
                 {
-                    if (entry.Value.Contains(vertex))
+                    if (entry.Value.Contains(node))
                     {
-                        edgesToRemove.Add(Tuple.Create(entry.Key, vertex));
+                        edgesToRemove.Add((entry.Key, node));
                     }
                 }
 
@@ -75,60 +79,63 @@ namespace MoonTools.Core.Graph
                     RemoveEdge(edge.Item1, edge.Item2);
                 }
 
-                _vertices.Remove(vertex);
-                _neighbors.Remove(vertex);
+                nodes.Remove(node);
+                neighbors.Remove(node);
             }
         }
 
-        public void AddEdge(T v, T u)
+        public void AddEdge(TNode v, TNode u, TEdgeData edgeData)
         {
-            if (VertexExists(v) && VertexExists(u))
+            if (Exists(v) && Exists(u))
             {
-                _neighbors[v].Add(u);
+                neighbors[v].Add(u);
+                edges.Add((v, u));
+                this.edgesToEdgeData.Add((v, u), edgeData);
             }
         }
 
-        public void AddEdges(params Tuple<T, T>[] edges)
+        public void AddEdges(params (TNode, TNode, TEdgeData)[] edges)
         {
             foreach (var edge in edges)
             {
-                AddEdge(edge.Item1, edge.Item2);
+                AddEdge(edge.Item1, edge.Item2, edge.Item3);
             }
         }
 
-        public void RemoveEdge(T v, T u)
+        public void RemoveEdge(TNode v, TNode u)
         {
-            _neighbors[v].Remove(u);
+            neighbors[v].Remove(u);
         }
 
-        public IEnumerable<T> Neighbors(T vertex)
+        public TEdgeData EdgeData((TNode, TNode) edge)
         {
-            if (VertexExists(vertex))
+            return edgesToEdgeData[edge];
+        }
+
+        public IEnumerable<TNode> Neighbors(TNode node)
+        {
+            if (Exists(node))
             {
-                return _neighbors[vertex];
+                return neighbors[node];
             }
             else
             {
-                return Enumerable.Empty<T>();
+                return Enumerable.Empty<TNode>();
             }
         }
 
-        /*
-         * GRAPH ANALYSIS METHODS
-         */
-
-        public Dictionary<T, Dictionary<SearchSymbol, uint>> NodeDFS()
+        public Dictionary<TNode, Dictionary<SearchSymbol, uint>> NodeDFS()
         {
-            var discovered = new HashSet<T>();
+            var discovered = new HashSet<TNode>();
             uint time = 0;
-            var output = new Dictionary<T, Dictionary<SearchSymbol, uint>>();
+            var output = new Dictionary<TNode, Dictionary<SearchSymbol, uint>>();
 
-            foreach (var vertex in Vertices)
+            foreach (var node in Nodes)
             {
-                output.Add(vertex, new Dictionary<SearchSymbol, uint>());
+                output.Add(node, new Dictionary<SearchSymbol, uint>());
             }
 
-            void dfsHelper(T v)
+            void dfsHelper(TNode v)
             {
                 discovered.Add(v);
                 time++;
@@ -146,11 +153,11 @@ namespace MoonTools.Core.Graph
                 output[v].Add(SearchSymbol.finish, time);
             }
 
-            foreach (var vertex in Vertices)
+            foreach (var node in Nodes)
             {
-                if (!discovered.Contains(vertex))
+                if (!discovered.Contains(node))
                 {
-                    dfsHelper(vertex);
+                    dfsHelper(node);
                 }
             }
 
@@ -162,10 +169,10 @@ namespace MoonTools.Core.Graph
             return StronglyConnectedComponents().Any((scc) => scc.Count() > 1);
         }
 
-        public IEnumerable<T> TopologicalSort()
+        public IEnumerable<TNode> TopologicalSort()
         {
             var dfs = NodeDFS();
-            var priority = new SortedList<uint, T>();
+            var priority = new SortedList<uint, TNode>();
             foreach (var entry in dfs)
             {
                 priority.Add(entry.Value[SearchSymbol.finish], entry.Key);
@@ -173,22 +180,22 @@ namespace MoonTools.Core.Graph
             return priority.Values.Reverse();
         }
 
-        public IEnumerable<IEnumerable<T>> StronglyConnectedComponents()
+        public IEnumerable<IEnumerable<TNode>> StronglyConnectedComponents()
         {
-            var preorder = new Dictionary<T, uint>();
-            var lowlink = new Dictionary<T, uint>();
-            var sccFound = new Dictionary<T, bool>();
-            var sccQueue = new Stack<T>();
+            var preorder = new Dictionary<TNode, uint>();
+            var lowlink = new Dictionary<TNode, uint>();
+            var sccFound = new Dictionary<TNode, bool>();
+            var sccQueue = new Stack<TNode>();
 
-            var result = new List<List<T>>();
+            var result = new List<List<TNode>>();
 
             uint preorderCounter = 0;
 
-            foreach (var source in Vertices)
+            foreach (var source in Nodes)
             {
                 if (!sccFound.ContainsKey(source))
                 {
-                    var queue = new Stack<T>();
+                    var queue = new Stack<TNode>();
                     queue.Push(source);
 
                     while (queue.Count > 0)
@@ -233,7 +240,7 @@ namespace MoonTools.Core.Graph
                             if (lowlink[v] == preorder[v])
                             {
                                 sccFound[v] = true;
-                                var scc = new List<T>
+                                var scc = new List<TNode>
                                 {
                                     v
                                 };
@@ -257,11 +264,11 @@ namespace MoonTools.Core.Graph
             return result;
         }
 
-        public IEnumerable<IEnumerable<T>> SimpleCycles()
+        public IEnumerable<IEnumerable<TNode>> SimpleCycles()
         {
-            void unblock(T thisnode, HashSet<T> blocked, Dictionary<T, HashSet<T>> B)
+            void unblock(TNode thisnode, HashSet<TNode> blocked, Dictionary<TNode, HashSet<TNode>> B)
             {
-                var stack = new Stack<T>();
+                var stack = new Stack<TNode>();
                 stack.Push(thisnode);
 
                 while (stack.Count > 0)
@@ -285,10 +292,10 @@ namespace MoonTools.Core.Graph
                 }
             }
 
-            List<List<T>> result = new List<List<T>>();
+            List<List<TNode>> result = new List<List<TNode>>();
             var subGraph = Clone();
 
-            var sccs = new Stack<IEnumerable<T>>();
+            var sccs = new Stack<IEnumerable<TNode>>();
             foreach (var scc in StronglyConnectedComponents())
             {
                 sccs.Push(scc);
@@ -296,18 +303,18 @@ namespace MoonTools.Core.Graph
 
             while (sccs.Count > 0)
             {
-                var scc = new Stack<T>(sccs.Pop());
+                var scc = new Stack<TNode>(sccs.Pop());
                 var startNode = scc.Pop();
-                var path = new Stack<T>();
+                var path = new Stack<TNode>();
                 path.Push(startNode);
-                var blocked = new HashSet<T>
+                var blocked = new HashSet<TNode>
                 {
                     startNode
                 };
-                var closed = new HashSet<T>();
-                var B = new Dictionary<T, HashSet<T>>();
-                var stack = new Stack<Tuple<T, Stack<T>>>();
-                stack.Push(Tuple.Create(startNode, new Stack<T>(subGraph.Neighbors(startNode))));
+                var closed = new HashSet<TNode>();
+                var B = new Dictionary<TNode, HashSet<TNode>>();
+                var stack = new Stack<Tuple<TNode, Stack<TNode>>>();
+                stack.Push(Tuple.Create(startNode, new Stack<TNode>(subGraph.Neighbors(startNode))));
 
                 while (stack.Count > 0)
                 {
@@ -321,7 +328,7 @@ namespace MoonTools.Core.Graph
 
                         if (nextNode.Equals(startNode))
                         {
-                            var resultPath = new List<T>();
+                            var resultPath = new List<TNode>();
                             foreach (var v in path)
                             {
                                 resultPath.Add(v);
@@ -335,7 +342,7 @@ namespace MoonTools.Core.Graph
                         else if (!blocked.Contains(nextNode))
                         {
                             path.Push(nextNode);
-                            stack.Push(Tuple.Create(nextNode, new Stack<T>(subGraph.Neighbors(nextNode))));
+                            stack.Push(Tuple.Create(nextNode, new Stack<TNode>(subGraph.Neighbors(nextNode))));
                             closed.Remove(nextNode);
                             blocked.Add(nextNode);
                             continue;
@@ -354,7 +361,7 @@ namespace MoonTools.Core.Graph
                             {
                                 if (!B.ContainsKey(neighbor))
                                 {
-                                    B[neighbor] = new HashSet<T>();
+                                    B[neighbor] = new HashSet<TNode>();
                                 }
                                 B[neighbor].Add(thisnode);
                             }
@@ -365,7 +372,7 @@ namespace MoonTools.Core.Graph
                     }
                 }
 
-                subGraph.RemoveVertex(startNode);
+                subGraph.RemoveNode(startNode);
                 var H = subGraph.SubGraph(scc.ToArray());
                 var HSccs = H.StronglyConnectedComponents();
                 foreach (var HScc in HSccs)
@@ -377,43 +384,49 @@ namespace MoonTools.Core.Graph
             return result.Distinct(new SimpleCycleComparer());
         }
 
-        public DirectedGraph<T> Clone()
+        public DirectedGraph<TNode, TEdgeData> Clone()
         {
-            var clone = new DirectedGraph<T>();
-            clone.AddVertices(Vertices.ToArray());
+            var clone = new DirectedGraph<TNode, TEdgeData>();
+            clone.AddNodes(Nodes.ToArray());
 
-            foreach (var v in Vertices)
+            foreach (var v in Nodes)
             {
                 foreach (var n in Neighbors(v))
                 {
-                    clone.AddEdge(v, n);
+                    clone.AddEdge(v, n, EdgeData((v, n)));
                 }
             }
 
             return clone;
         }
 
-        public DirectedGraph<T> SubGraph(params T[] subVertices)
+        public DirectedGraph<TNode, TEdgeData> SubGraph(params TNode[] subVertices)
         {
-            var subGraph = new DirectedGraph<T>();
-            subGraph.AddVertices(subVertices.ToArray());
+            var subGraph = new DirectedGraph<TNode, TEdgeData>();
+            subGraph.AddNodes(subVertices.ToArray());
 
-            foreach (var v in Vertices)
+            foreach (var n in Nodes)
             {
-                if (Vertices.Contains(v))
+                if (Nodes.Contains(n))
                 {
-                    var neighbors = Neighbors(v);
+                    var neighbors = Neighbors(n);
                     foreach (var u in neighbors)
                     {
                         if (subVertices.Contains(u))
                         {
-                            subGraph.AddEdge(v, u);
+                            subGraph.AddEdge(n, u, EdgeData((n, u)));
                         }
                     }
                 }
             }
 
             return subGraph;
+        }
+
+        public void Clear()
+        {
+            nodes.Clear();
+            neighbors.Clear();
         }
     }
 }
