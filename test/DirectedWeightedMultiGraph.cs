@@ -247,6 +247,8 @@ namespace Tests
                 )
                 .And
                 .HaveCount(3);
+
+            myGraph.Invoking(x => x.AStarShortestPath('a', 'z', (x, y) => 15)).Should().Throw<System.ArgumentException>();
         }
     }
 }
