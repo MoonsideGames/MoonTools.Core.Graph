@@ -6,8 +6,8 @@ namespace MoonTools.Core.Graph
 {
     public enum SearchSymbol
     {
-        start,
-        finish
+        Start,
+        Finish
     }
 
     public class DirectedGraph<TNode, TEdgeData> : IGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
@@ -154,7 +154,7 @@ namespace MoonTools.Core.Graph
             {
                 discovered.Add(v);
                 time++;
-                output[v].Add(SearchSymbol.start, time);
+                output[v].Add(SearchSymbol.Start, time);
 
                 foreach (var neighbor in Neighbors(v))
                 {
@@ -165,7 +165,7 @@ namespace MoonTools.Core.Graph
                 }
 
                 time++;
-                output[v].Add(SearchSymbol.finish, time);
+                output[v].Add(SearchSymbol.Finish, time);
             }
 
             foreach (var node in Nodes)
@@ -190,7 +190,7 @@ namespace MoonTools.Core.Graph
             var priority = new SortedList<uint, TNode>();
             foreach (var entry in dfs)
             {
-                priority.Add(entry.Value[SearchSymbol.finish], entry.Key);
+                priority.Add(entry.Value[SearchSymbol.Finish], entry.Key);
             }
             return priority.Values.Reverse();
         }
