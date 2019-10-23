@@ -111,17 +111,10 @@ namespace Tests
 
             var result = myGraph.NodeDFS();
 
-            Assert.That(result['a'][SearchSymbol.Start], Is.EqualTo(1));
-            Assert.That(result['a'][SearchSymbol.Finish], Is.EqualTo(8));
-
-            Assert.That(result['b'][SearchSymbol.Start], Is.EqualTo(2));
-            Assert.That(result['b'][SearchSymbol.Finish], Is.EqualTo(5));
-
-            Assert.That(result['c'][SearchSymbol.Start], Is.EqualTo(6));
-            Assert.That(result['c'][SearchSymbol.Finish], Is.EqualTo(7));
-
-            Assert.That(result['d'][SearchSymbol.Start], Is.EqualTo(3));
-            Assert.That(result['d'][SearchSymbol.Finish], Is.EqualTo(4));
+            result.Should().Contain(('d', 1));
+            result.Should().Contain(('b', 2));
+            result.Should().Contain(('c', 3));
+            result.Should().Contain(('a', 4));
         }
 
         [Test]

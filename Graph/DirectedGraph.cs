@@ -71,30 +71,29 @@ namespace MoonTools.Core.Graph
             }
         }
 
+        readonly List<(TNode, TNode)> edgesToRemove = new List<(TNode, TNode)>();
+
         public void RemoveNode(TNode node)
         {
             CheckNodes(node);
 
-            var edgesToRemove = new List<(TNode, TNode)>();
+            edgesToRemove.Clear();
 
-            if (Exists(node))
+            foreach (var entry in neighbors)
             {
-                foreach (var entry in neighbors)
+                if (entry.Value.Contains(node))
                 {
-                    if (entry.Value.Contains(node))
-                    {
-                        edgesToRemove.Add((entry.Key, node));
-                    }
+                    edgesToRemove.Add((entry.Key, node));
                 }
-
-                foreach (var edge in edgesToRemove)
-                {
-                    RemoveEdge(edge.Item1, edge.Item2);
-                }
-
-                nodes.Remove(node);
-                neighbors.Remove(node);
             }
+
+            foreach (var edge in edgesToRemove)
+            {
+                RemoveEdge(edge.Item1, edge.Item2);
+            }
+
+            nodes.Remove(node);
+            neighbors.Remove(node);
         }
 
         public void AddEdge(TNode v, TNode u, TEdgeData edgeData)
@@ -103,7 +102,7 @@ namespace MoonTools.Core.Graph
 
             neighbors[v].Add(u);
             edges.Add((v, u));
-            this.edgesToEdgeData.Add((v, u), edgeData);
+            edgesToEdgeData.Add((v, u), edgeData);
         }
 
         public void AddEdges(params (TNode, TNode, TEdgeData)[] edges)
@@ -124,6 +123,7 @@ namespace MoonTools.Core.Graph
         {
             CheckEdge(v, u);
             neighbors[v].Remove(u);
+            edgesToEdgeData.Remove((v, u));
         }
 
         public TEdgeData EdgeData(TNode v, TNode u)
@@ -139,22 +139,18 @@ namespace MoonTools.Core.Graph
             return neighbors[node];
         }
 
-        public Dictionary<TNode, Dictionary<SearchSymbol, uint>> NodeDFS()
+        readonly HashSet<TNode> discovered = new HashSet<TNode>();
+        readonly Dictionary<TNode, uint> dfsOutput = new Dictionary<TNode, uint>();
+
+        public IEnumerable<(TNode, uint)> NodeDFS()
         {
-            var discovered = new HashSet<TNode>();
+            discovered.Clear();
+            dfsOutput.Clear();
             uint time = 0;
-            var output = new Dictionary<TNode, Dictionary<SearchSymbol, uint>>();
 
-            foreach (var node in Nodes)
-            {
-                output.Add(node, new Dictionary<SearchSymbol, uint>());
-            }
-
-            void dfsHelper(TNode v)
+            void dfsHelper(TNode v) // refactor this to remove closure
             {
                 discovered.Add(v);
-                time++;
-                output[v].Add(SearchSymbol.Start, time);
 
                 foreach (var neighbor in Neighbors(v))
                 {
@@ -165,7 +161,7 @@ namespace MoonTools.Core.Graph
                 }
 
                 time++;
-                output[v].Add(SearchSymbol.Finish, time);
+                dfsOutput[v] = time;
             }
 
             foreach (var node in Nodes)
@@ -176,7 +172,7 @@ namespace MoonTools.Core.Graph
                 }
             }
 
-            return output;
+            return dfsOutput.Select(entry => (entry.Key, entry.Value));
         }
 
         public bool Cyclic()
@@ -186,23 +182,22 @@ namespace MoonTools.Core.Graph
 
         public IEnumerable<TNode> TopologicalSort()
         {
-            var dfs = NodeDFS();
-            var priority = new SortedList<uint, TNode>();
-            foreach (var entry in dfs)
-            {
-                priority.Add(entry.Value[SearchSymbol.Finish], entry.Key);
-            }
-            return priority.Values.Reverse();
+            return NodeDFS().OrderByDescending(entry => entry.Item2).Select(entry => entry.Item1);
         }
+
+        readonly Dictionary<TNode, uint> preorder = new Dictionary<TNode, uint>();
+        readonly Dictionary<TNode, uint> lowlink = new Dictionary<TNode, uint>();
+        readonly Dictionary<TNode, bool> sccFound = new Dictionary<TNode, bool>();
+        readonly Stack<TNode> sccQueue = new Stack<TNode>();
+        readonly List<List<TNode>> sccResult = new List<List<TNode>>();
 
         public IEnumerable<IEnumerable<TNode>> StronglyConnectedComponents()
         {
-            var preorder = new Dictionary<TNode, uint>();
-            var lowlink = new Dictionary<TNode, uint>();
-            var sccFound = new Dictionary<TNode, bool>();
-            var sccQueue = new Stack<TNode>();
-
-            var result = new List<List<TNode>>();
+            preorder.Clear();
+            lowlink.Clear();
+            sccFound.Clear();
+            sccQueue.Clear();
+            sccResult.Clear();
 
             uint preorderCounter = 0;
 
@@ -265,7 +260,7 @@ namespace MoonTools.Core.Graph
                                     sccFound[k] = true;
                                     scc.Add(k);
                                 }
-                                result.Add(scc);
+                                sccResult.Add(scc);
                             }
                             else
                             {
@@ -276,12 +271,12 @@ namespace MoonTools.Core.Graph
                 }
             }
 
-            return result;
+            return sccResult;
         }
 
         public IEnumerable<IEnumerable<TNode>> SimpleCycles()
         {
-            void unblock(TNode thisnode, HashSet<TNode> blocked, Dictionary<TNode, HashSet<TNode>> B)
+            void unblock(TNode thisnode, HashSet<TNode> blocked, Dictionary<TNode, HashSet<TNode>> B) //refactor to remove closure
             {
                 var stack = new Stack<TNode>();
                 stack.Push(thisnode);
