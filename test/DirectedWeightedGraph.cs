@@ -2,27 +2,28 @@ using NUnit.Framework;
 using FluentAssertions;
 
 using MoonTools.Core.Graph;
+using System;
 using System.Linq;
 
 namespace Tests
 {
-    public class DirectedWeightedMultiGraphTests
+    public class DirectedWeightedGraphTests
     {
         EdgeData dummyEdgeData;
 
         [Test]
         public void AddNode()
         {
-            var myGraph = new DirectedWeightedMultiGraph<int, EdgeData>();
+            var myGraph = new DirectedWeightedGraph<int, EdgeData>();
             myGraph.AddNode(4);
 
-            Assert.That(myGraph.Nodes, Does.Contain(4));
+            myGraph.Exists(4).Should().BeTrue();
         }
 
         [Test]
         public void AddNodes()
         {
-            var myGraph = new DirectedWeightedMultiGraph<int, EdgeData>();
+            var myGraph = new DirectedWeightedGraph<int, EdgeData>();
             myGraph.AddNodes(4, 20, 69);
 
             myGraph.Exists(4).Should().BeTrue();
@@ -33,23 +34,32 @@ namespace Tests
         [Test]
         public void AddEdge()
         {
-            var myGraph = new DirectedWeightedMultiGraph<int, EdgeData>();
+            var myGraph = new DirectedWeightedGraph<int, EdgeData>();
             myGraph.AddNodes(5, 6);
             myGraph.AddEdge(5, 6, 10, dummyEdgeData);
 
             myGraph.Neighbors(5).Should().Contain(6);
+            myGraph.Weight(5, 6).Should().Be(10);
+            myGraph.EdgeData(5, 6).Should().Be(dummyEdgeData);
+
+            myGraph.Invoking(x => x.AddEdge(5, 6, 3, dummyEdgeData)).Should().Throw<ArgumentException>();
         }
 
         [Test]
         public void AddEdges()
         {
-            var myGraph = new DirectedWeightedMultiGraph<int, EdgeData>();
+            var a = new NumEdgeData { testNum = 1 };
+            var b = new NumEdgeData { testNum = 2 };
+            var c = new NumEdgeData { testNum = 3 };
+            var d = new NumEdgeData { testNum = 4 };
+
+            var myGraph = new DirectedWeightedGraph<int, NumEdgeData>();
             myGraph.AddNodes(1, 2, 3, 4);
             myGraph.AddEdges(
-                (1, 2, 5, dummyEdgeData),
-                (2, 3, 6, dummyEdgeData),
-                (2, 4, 7, dummyEdgeData),
-                (3, 4, 8, dummyEdgeData)
+                (1, 2, 5, a),
+                (2, 3, 6, b),
+                (2, 4, 7, c),
+                (3, 4, 8, d)
             );
 
             myGraph.Neighbors(1).Should().Contain(2);
@@ -58,75 +68,45 @@ namespace Tests
             myGraph.Neighbors(3).Should().Contain(4);
             myGraph.Neighbors(1).Should().NotContain(4);
 
-            myGraph.EdgeIDs(1, 2).Should().HaveCount(1);
-            myGraph.Weights(1, 2).Should().Contain(5);
-        }
+            myGraph.Weight(1, 2).Should().Be(5);
+            myGraph.Weight(2, 3).Should().Be(6);
+            myGraph.Weight(2, 4).Should().Be(7);
+            myGraph.Weight(3, 4).Should().Be(8);
 
-        [Test]
-        public void AddMultiEdges()
-        {
-            var myGraph = new DirectedWeightedMultiGraph<int, EdgeData>();
-            myGraph.AddNodes(1, 2, 3, 4);
-            myGraph.AddEdges(
-                (1, 2, 5, dummyEdgeData),
-                (2, 3, 6, dummyEdgeData),
-                (2, 4, 7, dummyEdgeData),
-                (2, 4, 8, dummyEdgeData)
-            );
+            myGraph.EdgeData(1, 2).Should().Be(a);
+            myGraph.EdgeData(2, 3).Should().Be(b);
+            myGraph.EdgeData(2, 4).Should().Be(c);
+            myGraph.EdgeData(3, 4).Should().Be(d);
 
-            myGraph.Neighbors(1).Should().Contain(2);
-            myGraph.Neighbors(2).Should().Contain(3);
-            myGraph.Neighbors(2).Should().Contain(4);
-            myGraph.Neighbors(1).Should().NotContain(4);
-
-            myGraph.EdgeIDs(2, 4).Should().HaveCount(2);
-            myGraph.Weights(2, 4).Should().HaveCount(2);
-            myGraph.Weights(2, 4).Should().Contain(7);
-            myGraph.Weights(2, 4).Should().Contain(8);
+            myGraph.Invoking(x => x.AddEdge(2, 4, 9, d)).Should().Throw<ArgumentException>();
         }
 
         [Test]
         public void Clear()
         {
-            var myGraph = new DirectedWeightedMultiGraph<int, EdgeData>();
+            var myGraph = new DirectedWeightedGraph<int, EdgeData>();
             myGraph.AddNodes(1, 2, 3, 4);
             myGraph.AddEdges(
                 (1, 2, 5, dummyEdgeData),
                 (2, 3, 6, dummyEdgeData),
-                (2, 4, 7, dummyEdgeData),
-                (2, 4, 8, dummyEdgeData)
+                (2, 4, 7, dummyEdgeData)
             );
 
             myGraph.Clear();
 
-            myGraph.Invoking(x => x.Neighbors(1)).Should().Throw<System.ArgumentException>();
-            myGraph.Invoking(x => x.Weights(1, 2)).Should().Throw<System.ArgumentException>();
-            myGraph.Invoking(x => x.EdgeIDs(1, 2)).Should().Throw<System.ArgumentException>();
-        }
-
-        [Test]
-        public void Edges()
-        {
-            var myGraph = new DirectedWeightedMultiGraph<int, EdgeData>();
-            myGraph.AddNodes(1, 2, 3);
-            myGraph.AddEdges(
-                (1, 2, 4, dummyEdgeData),
-                (1, 2, 3, dummyEdgeData),
-                (2, 3, 5, dummyEdgeData)
-            );
-
-            myGraph.EdgeIDs(1, 2).Should().HaveCount(2);
-            myGraph.EdgeIDs(2, 3).Should().HaveCount(1);
+            myGraph.Nodes.Should().BeEmpty();
+            myGraph.Invoking(x => x.Neighbors(1)).Should().Throw<ArgumentException>();
+            myGraph.Invoking(x => x.Weight(1, 2)).Should().Throw<ArgumentException>();
+            myGraph.Invoking(x => x.EdgeData(1, 2)).Should().Throw<ArgumentException>();
         }
 
         [Test]
         public void NodeExists()
         {
-            var myGraph = new DirectedWeightedMultiGraph<int, EdgeData>();
+            var myGraph = new DirectedWeightedGraph<int, EdgeData>();
             myGraph.AddNodes(1, 2, 3);
             myGraph.AddEdges(
                 (1, 2, 4, dummyEdgeData),
-                (1, 2, 3, dummyEdgeData),
                 (2, 3, 5, dummyEdgeData)
             );
 
@@ -139,28 +119,26 @@ namespace Tests
         [Test]
         public void EdgeExists()
         {
-            var myGraph = new DirectedWeightedMultiGraph<int, EdgeData>();
+            var myGraph = new DirectedWeightedGraph<int, EdgeData>();
             myGraph.AddNodes(1, 2, 3);
             myGraph.AddEdges(
                 (1, 2, 4, dummyEdgeData),
-                (1, 2, 3, dummyEdgeData),
                 (2, 3, 5, dummyEdgeData)
             );
 
             myGraph.Exists(1, 2).Should().BeTrue();
             myGraph.Exists(2, 3).Should().BeTrue();
             myGraph.Exists(1, 3).Should().BeFalse();
-            myGraph.Invoking(x => x.Exists(3, 4)).Should().Throw<System.ArgumentException>();
+            myGraph.Invoking(x => x.Exists(3, 4)).Should().Throw<ArgumentException>();
         }
 
         [Test]
         public void Neighbors()
         {
-            var myGraph = new DirectedWeightedMultiGraph<int, EdgeData>();
+            var myGraph = new DirectedWeightedGraph<int, EdgeData>();
             myGraph.AddNodes(1, 2, 3);
             myGraph.AddEdges(
                 (1, 2, 4, dummyEdgeData),
-                (1, 2, 3, dummyEdgeData),
                 (2, 3, 5, dummyEdgeData)
             );
 
@@ -171,41 +149,36 @@ namespace Tests
         }
 
         [Test]
-        public void Weights()
+        public void Weight()
         {
-            var myGraph = new DirectedWeightedMultiGraph<int, EdgeData>();
+            var myGraph = new DirectedWeightedGraph<int, EdgeData>();
             myGraph.AddNodes(1, 2, 3);
             myGraph.AddEdges(
                 (1, 2, 4, dummyEdgeData),
-                (1, 2, 3, dummyEdgeData),
                 (2, 3, 5, dummyEdgeData)
             );
 
-            myGraph.Weights(1, 2).Should().Contain(3);
-            myGraph.Weights(1, 2).Should().Contain(4);
-            myGraph.Weights(2, 3).Should().Contain(5);
-            myGraph.Invoking(x => x.Weights(3, 4)).Should().Throw<System.ArgumentException>();
+            myGraph.Weight(1, 2).Should().Be(4);
+            myGraph.Weight(2, 3).Should().Be(5);
+            myGraph.Invoking(x => x.Weight(3, 4)).Should().Throw<System.ArgumentException>();
         }
 
         [Test]
         public void EdgeData()
         {
             var a = new NumEdgeData { testNum = 3 };
-            var b = new NumEdgeData { testNum = 4 };
-            var c = new NumEdgeData { testNum = 5 };
+            var b = new NumEdgeData { testNum = 5 };
 
-            var myGraph = new DirectedWeightedMultiGraph<int, NumEdgeData>();
+            var myGraph = new DirectedWeightedGraph<int, NumEdgeData>();
             myGraph.AddNodes(1, 2, 3);
             myGraph.AddEdges(
                 (1, 2, 4, a),
-                (1, 2, 3, b),
-                (2, 3, 5, c)
+                (2, 3, 5, b)
             );
 
-            myGraph.EdgeIDs(1, 2).Select(id => myGraph.EdgeData(id)).Should().Contain(a);
-            myGraph.EdgeIDs(1, 2).Select(id => myGraph.EdgeData(id)).Should().Contain(b);
-            myGraph.EdgeIDs(2, 3).Select(id => myGraph.EdgeData(id)).Should().Contain(c);
-            myGraph.Invoking(x => x.EdgeData(new System.Guid())).Should().Throw<System.ArgumentException>();
+            myGraph.EdgeData(1, 2).Should().Be(a);
+            myGraph.EdgeData(2, 3).Should().Be(b);
+            myGraph.Invoking(x => x.EdgeData(2, 4)).Should().Throw<ArgumentException>();
         }
 
         [Test]
@@ -215,17 +188,14 @@ namespace Tests
             var jump = new MoveTypeEdgeData { moveType = MoveType.Jump };
             var wallJump = new MoveTypeEdgeData { moveType = MoveType.WallJump };
 
-            var myGraph = new DirectedWeightedMultiGraph<char, MoveTypeEdgeData>();
+            var myGraph = new DirectedWeightedGraph<char, MoveTypeEdgeData>();
             myGraph.AddNodes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h');
             myGraph.AddEdges(
                 ('a', 'b', 2, run),
-                ('a', 'c', 1, jump),
                 ('a', 'c', 3, run),
                 ('a', 'e', 4, wallJump),
                 ('b', 'd', 2, jump),
-                ('b', 'd', 5, run),
                 ('b', 'e', 1, run),
-                ('c', 'g', 2, run),
                 ('c', 'g', 4, jump),
                 ('c', 'h', 11, run),
                 ('d', 'c', 3, jump),
@@ -240,7 +210,7 @@ namespace Tests
 
             myGraph
                 .AStarShortestPath('a', 'h', (x, y) => 1)
-                .Select(id => myGraph.EdgeData(id))
+                .Select(edge => myGraph.EdgeData(edge.Item1, edge.Item2))
                 .Should()
                 .ContainInOrder(
                     run, jump, wallJump

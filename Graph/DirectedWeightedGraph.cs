@@ -5,21 +5,19 @@ using MoreLinq;
 
 namespace MoonTools.Core.Graph
 {
-    public class DirectedWeightedMultiGraph<TNode, TEdgeData> : IGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
+    public class DirectedWeightedGraph<TNode, TEdgeData> : IGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
     {
         protected HashSet<TNode> nodes = new HashSet<TNode>();
         protected Dictionary<TNode, HashSet<TNode>> neighbors = new Dictionary<TNode, HashSet<TNode>>();
-        protected Dictionary<(TNode, TNode), HashSet<Guid>> edges = new Dictionary<(TNode, TNode), HashSet<Guid>>();
-        protected Dictionary<Guid, (TNode, TNode)> IDToEdge = new Dictionary<Guid, (TNode, TNode)>();
-        protected Dictionary<Guid, int> weights = new Dictionary<Guid, int>();
-        protected Dictionary<Guid, TEdgeData> edgeToEdgeData = new Dictionary<Guid, TEdgeData>();
+        protected Dictionary<(TNode, TNode), TEdgeData> edgeToEdgeData = new Dictionary<(TNode, TNode), TEdgeData>();
+        protected Dictionary<(TNode, TNode), int> weights = new Dictionary<(TNode, TNode), int>();
 
         // store search sets to prevent GC
         protected HashSet<TNode> openSet = new HashSet<TNode>();
         protected HashSet<TNode> closedSet = new HashSet<TNode>();
         protected Dictionary<TNode, int> gScore = new Dictionary<TNode, int>();
         protected Dictionary<TNode, int> fScore = new Dictionary<TNode, int>();
-        protected Dictionary<TNode, Guid> cameFrom = new Dictionary<TNode, Guid>();
+        protected Dictionary<TNode, TNode> cameFrom = new Dictionary<TNode, TNode>();
 
         public IEnumerable<TNode> Nodes => nodes;
 
@@ -39,20 +37,26 @@ namespace MoonTools.Core.Graph
             }
         }
 
+        private void CheckNodes(params TNode[] givenNodes)
+        {
+            foreach (var node in givenNodes)
+            {
+                if (!Exists(node))
+                {
+                    throw new ArgumentException($"Vertex {node} does not exist in the graph");
+                }
+            }
+        }
+
         public void AddEdge(TNode v, TNode u, int weight, TEdgeData data)
         {
             CheckNodes(v, u);
 
-            var id = Guid.NewGuid();
+            if (Exists(v, u)) { throw new ArgumentException($"Edge with vertex {v} and {u} already exists in the graph"); }
+
             neighbors[v].Add(u);
-            weights.Add(id, weight);
-            if (!edges.ContainsKey((v, u)))
-            {
-                edges[(v, u)] = new HashSet<Guid>();
-            }
-            edges[(v, u)].Add(id);
-            edgeToEdgeData.Add(id, data);
-            IDToEdge.Add(id, (v, u));
+            weights.Add((v, u), weight);
+            edgeToEdgeData.Add((v, u), data);
         }
 
         public void AddEdges(params (TNode, TNode, int, TEdgeData)[] edges)
@@ -67,27 +71,8 @@ namespace MoonTools.Core.Graph
         {
             nodes.Clear();
             neighbors.Clear();
-            weights.Clear();
-            edges.Clear();
-            IDToEdge.Clear();
             edgeToEdgeData.Clear();
-        }
-
-        private void CheckNodes(params TNode[] givenNodes)
-        {
-            foreach (var node in givenNodes)
-            {
-                if (!Exists(node))
-                {
-                    throw new ArgumentException($"Vertex {node} does not exist in the graph");
-                }
-            }
-        }
-
-        public IEnumerable<Guid> EdgeIDs(TNode v, TNode u)
-        {
-            CheckNodes(v, u);
-            return edges.ContainsKey((v, u)) ? edges[(v, u)] : Enumerable.Empty<Guid>();
+            weights.Clear();
         }
 
         public bool Exists(TNode node) => nodes.Contains(node);
@@ -95,43 +80,44 @@ namespace MoonTools.Core.Graph
         public bool Exists(TNode v, TNode u)
         {
             CheckNodes(v, u);
-            return edges.ContainsKey((v, u));
+            return neighbors[v].Contains(u);
         }
 
         public IEnumerable<TNode> Neighbors(TNode node)
         {
             CheckNodes(node);
-            return neighbors.ContainsKey(node) ? neighbors[node] : Enumerable.Empty<TNode>();
+            return neighbors[node];
         }
 
-        public IEnumerable<int> Weights(TNode v, TNode u)
+        private void CheckEdge(TNode v, TNode u)
         {
             CheckNodes(v, u);
-            return edges[(v, u)].Select(id => weights[id]);
+            if (!Exists(v, u)) { throw new ArgumentException($"Edge between vertex {v} and vertex {u} does not exist in the graph"); }
         }
 
-        public TEdgeData EdgeData(Guid id)
+        public int Weight(TNode v, TNode u)
         {
-            if (!edgeToEdgeData.ContainsKey(id))
-            {
-                throw new ArgumentException($"Edge {id} does not exist in the graph.");
-            }
-
-            return edgeToEdgeData[id];
+            CheckEdge(v, u);
+            return weights[(v, u)];
         }
 
-        private IEnumerable<Guid> ReconstructPath(Dictionary<TNode, Guid> cameFrom, TNode currentNode)
+        public TEdgeData EdgeData(TNode v, TNode u)
+        {
+            CheckEdge(v, u);
+            return edgeToEdgeData[(v, u)];
+        }
+
+        private IEnumerable<(TNode, TNode)> ReconstructPath(Dictionary<TNode, TNode> cameFrom, TNode currentNode)
         {
             while (cameFrom.ContainsKey(currentNode))
             {
-                var edgeID = cameFrom[currentNode];
-                var edge = IDToEdge[edgeID];
+                var edge = (cameFrom[currentNode], currentNode);
                 currentNode = edge.Item1;
-                yield return edgeID;
+                yield return edge;
             }
         }
 
-        public IEnumerable<Guid> AStarShortestPath(TNode start, TNode end, Func<TNode, TNode, int> heuristic)
+        public IEnumerable<(TNode, TNode)> AStarShortestPath(TNode start, TNode end, Func<TNode, TNode, int> heuristic)
         {
             CheckNodes(start, end);
 
@@ -146,7 +132,7 @@ namespace MoonTools.Core.Graph
             gScore[start] = 0;
             fScore[start] = heuristic(start, end);
 
-            while (openSet.Any())
+            while (openSet.Count > 0)
             {
                 var currentNode = openSet.MinBy(node => fScore[node]).First();
 
@@ -162,14 +148,13 @@ namespace MoonTools.Core.Graph
                 {
                     if (!closedSet.Contains(neighbor))
                     {
-                        var lowestEdgeID = EdgeIDs(currentNode, neighbor).MinBy(id => weights[id]).First();
-                        var weight = weights[lowestEdgeID];
+                        var weight = weights[(currentNode, neighbor)];
 
                         var tentativeGScore = gScore.ContainsKey(currentNode) ? gScore[currentNode] + weight : int.MaxValue;
 
                         if (!openSet.Contains(neighbor) || tentativeGScore < gScore[neighbor])
                         {
-                            cameFrom[neighbor] = lowestEdgeID;
+                            cameFrom[neighbor] = currentNode;
                             gScore[neighbor] = tentativeGScore;
                             fScore[neighbor] = tentativeGScore + heuristic(neighbor, end);
                             openSet.Add(neighbor);
@@ -178,7 +163,7 @@ namespace MoonTools.Core.Graph
                 }
             }
 
-            return Enumerable.Empty<Guid>();
+            return Enumerable.Empty<(TNode, TNode)>();
         }
     }
 }
