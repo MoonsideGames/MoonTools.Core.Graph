@@ -394,7 +394,7 @@ namespace Tests
             myGraph.AddNodes(1, 2);
             myGraph.AddEdge(1, 2, dummyEdgeData);
 
-            myGraph.Exists((1, 2)).Should().BeTrue();
+            myGraph.Exists(1, 2).Should().BeTrue();
         }
 
         [Test]
@@ -404,7 +404,7 @@ namespace Tests
             myGraph.AddNodes(1, 2);
             myGraph.AddEdge(1, 2, new NumEdgeData { testNum = 4 });
 
-            myGraph.EdgeData((1, 2)).testNum.Should().Be(4);
+            myGraph.EdgeData(1, 2).testNum.Should().Be(4);
         }
     }
 }

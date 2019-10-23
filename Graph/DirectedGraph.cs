@@ -30,18 +30,8 @@ namespace MoonTools.Core.Graph
             }
         }
 
-        public IEnumerable<TNode> Nodes { get { return nodes; } }
-        public IEnumerable<(TNode, TNode)> Edges { get { return edges; } }
-
-        public bool Exists(TNode node)
-        {
-            return nodes.Contains(node);
-        }
-
-        public bool Exists((TNode, TNode) edge)
-        {
-            return edges.Contains(edge);
-        }
+        public IEnumerable<TNode> Nodes => nodes;
+        public IEnumerable<(TNode, TNode)> Edges => edges;
 
         public void AddNode(TNode node)
         {
@@ -60,8 +50,31 @@ namespace MoonTools.Core.Graph
             }
         }
 
+        public bool Exists(TNode node)
+        {
+            return nodes.Contains(node);
+        }
+
+        public bool Exists(TNode v, TNode u)
+        {
+            return edges.Contains((v, u));
+        }
+
+        private void CheckNodes(params TNode[] givenNodes)
+        {
+            foreach (var node in givenNodes)
+            {
+                if (!Exists(node))
+                {
+                    throw new ArgumentException($"Vertex {node} does not exist in the graph");
+                }
+            }
+        }
+
         public void RemoveNode(TNode node)
         {
+            CheckNodes(node);
+
             var edgesToRemove = new List<(TNode, TNode)>();
 
             if (Exists(node))
@@ -86,12 +99,11 @@ namespace MoonTools.Core.Graph
 
         public void AddEdge(TNode v, TNode u, TEdgeData edgeData)
         {
-            if (Exists(v) && Exists(u))
-            {
-                neighbors[v].Add(u);
-                edges.Add((v, u));
-                this.edgesToEdgeData.Add((v, u), edgeData);
-            }
+            CheckNodes(v, u);
+
+            neighbors[v].Add(u);
+            edges.Add((v, u));
+            this.edgesToEdgeData.Add((v, u), edgeData);
         }
 
         public void AddEdges(params (TNode, TNode, TEdgeData)[] edges)
@@ -102,26 +114,29 @@ namespace MoonTools.Core.Graph
             }
         }
 
+        private void CheckEdge(TNode v, TNode u)
+        {
+            CheckNodes(v, u);
+            if (!Exists(v, u)) { throw new ArgumentException($"Edge between vertex {v} and vertex {u} does not exist in the graph"); }
+        }
+
         public void RemoveEdge(TNode v, TNode u)
         {
+            CheckEdge(v, u);
             neighbors[v].Remove(u);
         }
 
-        public TEdgeData EdgeData((TNode, TNode) edge)
+        public TEdgeData EdgeData(TNode v, TNode u)
         {
-            return edgesToEdgeData[edge];
+            CheckEdge(v, u);
+            return edgesToEdgeData[(v, u)];
         }
 
         public IEnumerable<TNode> Neighbors(TNode node)
         {
-            if (Exists(node))
-            {
-                return neighbors[node];
-            }
-            else
-            {
-                return Enumerable.Empty<TNode>();
-            }
+            CheckNodes(node);
+
+            return neighbors[node];
         }
 
         public Dictionary<TNode, Dictionary<SearchSymbol, uint>> NodeDFS()
@@ -393,7 +408,7 @@ namespace MoonTools.Core.Graph
             {
                 foreach (var n in Neighbors(v))
                 {
-                    clone.AddEdge(v, n, EdgeData((v, n)));
+                    clone.AddEdge(v, n, EdgeData(v, n));
                 }
             }
 
@@ -414,7 +429,7 @@ namespace MoonTools.Core.Graph
                     {
                         if (subVertices.Contains(u))
                         {
-                            subGraph.AddEdge(n, u, EdgeData((n, u)));
+                            subGraph.AddEdge(n, u, EdgeData(n, u));
                         }
                     }
                 }
@@ -427,6 +442,8 @@ namespace MoonTools.Core.Graph
         {
             nodes.Clear();
             neighbors.Clear();
+            edges.Clear();
+            edgesToEdgeData.Clear();
         }
     }
 }
