@@ -33,6 +33,9 @@ namespace MoonTools.Core.Graph
         public IEnumerable<TNode> Nodes => nodes;
         public IEnumerable<(TNode, TNode)> Edges => edges;
 
+        public int Order => nodes.Count;
+        public int Size => edges.Count;
+
         public void AddNode(TNode node)
         {
             if (!Exists(node))
@@ -71,6 +74,12 @@ namespace MoonTools.Core.Graph
             }
         }
 
+        public int Degree(TNode node)
+        {
+            CheckNodes(node);
+            return neighbors[node].Count;
+        }
+
         readonly List<(TNode, TNode)> edgesToRemove = new List<(TNode, TNode)>();
 
         public void RemoveNode(TNode node)
@@ -96,7 +105,7 @@ namespace MoonTools.Core.Graph
             neighbors.Remove(node);
         }
 
-        public void AddEdge(TNode v, TNode u, TEdgeData edgeData)
+        public virtual void AddEdge(TNode v, TNode u, TEdgeData edgeData)
         {
             CheckNodes(v, u);
 
@@ -105,7 +114,7 @@ namespace MoonTools.Core.Graph
             edgesToEdgeData.Add((v, u), edgeData);
         }
 
-        public void AddEdges(params (TNode, TNode, TEdgeData)[] edges)
+        public virtual void AddEdges(params (TNode, TNode, TEdgeData)[] edges)
         {
             foreach (var edge in edges)
             {
@@ -119,10 +128,11 @@ namespace MoonTools.Core.Graph
             if (!Exists(v, u)) { throw new ArgumentException($"Edge between vertex {v} and vertex {u} does not exist in the graph"); }
         }
 
-        public void RemoveEdge(TNode v, TNode u)
+        public virtual void RemoveEdge(TNode v, TNode u)
         {
             CheckEdge(v, u);
             neighbors[v].Remove(u);
+            edges.Remove((v, u));
             edgesToEdgeData.Remove((v, u));
         }
 
@@ -139,40 +149,167 @@ namespace MoonTools.Core.Graph
             return neighbors[node];
         }
 
-        readonly HashSet<TNode> discovered = new HashSet<TNode>();
-        readonly Dictionary<TNode, uint> dfsOutput = new Dictionary<TNode, uint>();
+        readonly Stack<TNode> dfsStack = new Stack<TNode>();
+        readonly HashSet<TNode> dfsDiscovered = new HashSet<TNode>();
 
-        public IEnumerable<(TNode, uint)> NodeDFS()
+        public IEnumerable<TNode> PreorderNodeDFS()
         {
-            discovered.Clear();
-            dfsOutput.Clear();
-            uint time = 0;
+            dfsStack.Clear();
+            dfsDiscovered.Clear();
+
+            foreach (var node in Nodes)
+            {
+                if (!dfsDiscovered.Contains(node))
+                {
+                    dfsStack.Push(node);
+                    while (dfsStack.Count > 0)
+                    {
+                        var current = dfsStack.Pop();
+                        if (!dfsDiscovered.Contains(current))
+                        {
+                            dfsDiscovered.Add(current);
+                            yield return current;
+                            foreach (var neighbor in Neighbors(current))
+                            {
+                                dfsStack.Push(neighbor);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // public IEnumerable<TNode> PostorderNodeDFS()
+        // {
+        //     dfsStack.Clear();
+        //     dfsDiscovered.Clear();
+
+        //     foreach (var node in Nodes)
+        //     {
+        //         if (!dfsDiscovered.Contains(node))
+        //         {
+        //             dfsStack.Push(node);
+        //             while (dfsStack.Count > 0)
+        //             {
+        //                 var current = dfsStack.Pop();
+        //                 if (!dfsDiscovered.Contains(current))
+        //                 {
+        //                     dfsDiscovered.Add(current);
+        //                     foreach (var neighbor in Neighbors(current))
+        //                     {
+        //                         dfsStack.Push(neighbor);
+        //                     }
+        //                     yield return current;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        List<TNode> postorderOutput = new List<TNode>();
+
+        public IEnumerable<TNode> PostorderNodeDFS()
+        {
+            dfsDiscovered.Clear();
+            postorderOutput.Clear();
 
             void dfsHelper(TNode v) // refactor this to remove closure
             {
-                discovered.Add(v);
+                dfsDiscovered.Add(v);
 
                 foreach (var neighbor in Neighbors(v))
                 {
-                    if (!discovered.Contains(neighbor))
+                    if (!dfsDiscovered.Contains(neighbor))
                     {
                         dfsHelper(neighbor);
                     }
                 }
 
-                time++;
-                dfsOutput[v] = time;
+                postorderOutput.Add(v);
             }
 
             foreach (var node in Nodes)
             {
-                if (!discovered.Contains(node))
+                if (!dfsDiscovered.Contains(node))
                 {
                     dfsHelper(node);
                 }
             }
 
-            return dfsOutput.Select(entry => (entry.Key, entry.Value));
+            return postorderOutput;
+        }
+
+        readonly Queue<TNode> bfsQueue = new Queue<TNode>();
+        readonly HashSet<TNode> bfsDiscovered = new HashSet<TNode>();
+
+        public IEnumerable<TNode> NodeBFS()
+        {
+            bfsQueue.Clear();
+            bfsDiscovered.Clear();
+
+            foreach (var node in Nodes)
+            {
+                if (!bfsDiscovered.Contains(node))
+                {
+                    bfsQueue.Enqueue(node);
+                    while (bfsQueue.Count > 0)
+                    {
+                        var current = bfsQueue.Dequeue();
+                        foreach (var neighbor in Neighbors(current))
+                        {
+                            if (!bfsDiscovered.Contains(neighbor))
+                            {
+                                bfsDiscovered.Add(neighbor);
+                                bfsQueue.Enqueue(neighbor);
+                                yield return neighbor;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // hoo boy this is bad for the GC
+        public IEnumerable<TNode> LexicographicBFS()
+        {
+            var sets = new List<List<TNode>>();
+            sets.Add(Nodes.ToList());
+
+            while (sets.Count > 0)
+            {
+                var firstSet = sets[0];
+                var node = firstSet[0];
+                firstSet.RemoveAt(0);
+                if (firstSet.Count == 0) { sets.RemoveAt(0); }
+
+                yield return node;
+
+                var replaced = new List<List<TNode>>();
+
+                foreach (var neighbor in Neighbors(node))
+                {
+                    if (sets.Any(set => set.Contains(neighbor)))
+                    {
+                        var s = sets.Find(set => set.Contains(neighbor));
+                        var sIndex = sets.IndexOf(s);
+                        List<TNode> t;
+                        if (replaced.Contains(s))
+                        {
+                            t = sets[sIndex - 1];
+                        }
+                        else
+                        {
+                            t = new List<TNode>();
+                            sets.Insert(sIndex, t);
+                            replaced.Add(s);
+                        }
+
+                        s.Remove(neighbor);
+                        t.Add(neighbor);
+                        if (s.Count == 0) { sets.Remove(s); }
+                    }
+                }
+            }
         }
 
         public bool Cyclic()
@@ -182,7 +319,7 @@ namespace MoonTools.Core.Graph
 
         public IEnumerable<TNode> TopologicalSort()
         {
-            return NodeDFS().OrderByDescending(entry => entry.Item2).Select(entry => entry.Item1);
+            return PostorderNodeDFS().Reverse();
         }
 
         readonly Dictionary<TNode, uint> preorder = new Dictionary<TNode, uint>();

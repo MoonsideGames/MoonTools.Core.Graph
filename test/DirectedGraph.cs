@@ -62,6 +62,47 @@ namespace Tests
         }
 
         [Test]
+        public void Order()
+        {
+            var myGraph = new DirectedGraph<int, EdgeData>();
+            myGraph.AddNodes(1, 2, 3, 4);
+
+            myGraph.Order.Should().Be(4);
+        }
+
+        [Test]
+        public void Size()
+        {
+            var myGraph = new DirectedGraph<int, EdgeData>();
+            myGraph.AddNodes(1, 2, 3, 4);
+            myGraph.AddEdges(
+                (1, 2, dummyEdgeData),
+                (2, 3, dummyEdgeData),
+                (2, 4, dummyEdgeData),
+                (3, 4, dummyEdgeData)
+            );
+
+            myGraph.Size.Should().Be(4);
+        }
+
+        [Test]
+        public void Degree()
+        {
+            var myGraph = new DirectedGraph<int, EdgeData>();
+            myGraph.AddNodes(1, 2, 3, 4);
+            myGraph.AddEdges(
+                (1, 2, dummyEdgeData),
+                (2, 3, dummyEdgeData),
+                (2, 4, dummyEdgeData),
+                (3, 4, dummyEdgeData)
+            );
+
+            myGraph.Degree(1).Should().Be(1);
+            myGraph.Degree(2).Should().Be(2);
+            myGraph.Degree(3).Should().Be(1);
+        }
+
+        [Test]
         public void RemoveEdge()
         {
             var myGraph = new DirectedGraph<int, EdgeData>();
@@ -106,15 +147,57 @@ namespace Tests
             myGraph.AddEdges(
                 ('a', 'b', dummyEdgeData),
                 ('a', 'c', dummyEdgeData),
-                ('b', 'd', dummyEdgeData)
+                ('b', 'd', dummyEdgeData),
+                ('c', 'd', dummyEdgeData)
             );
 
-            var result = myGraph.NodeDFS();
+            var result = myGraph.PreorderNodeDFS().ToList();
 
-            result.Should().Contain(('d', 1));
-            result.Should().Contain(('b', 2));
-            result.Should().Contain(('c', 3));
-            result.Should().Contain(('a', 4));
+            var indexA = result.IndexOf('a');
+            var indexB = result.IndexOf('b');
+            var indexC = result.IndexOf('c');
+            var indexD = result.IndexOf('d');
+
+            Assert.That(indexA < indexB && indexA < indexC);
+            Assert.That(indexB < indexD || indexC < indexD);
+        }
+
+        [Test]
+        public void NodeBFS()
+        {
+            var myGraph = new DirectedGraph<char, EdgeData>();
+            myGraph.AddNodes('a', 'b', 'c', 'd', 'e');
+            myGraph.AddEdges(
+                ('a', 'b', dummyEdgeData),
+                ('a', 'c', dummyEdgeData),
+                ('b', 'd', dummyEdgeData),
+                ('c', 'e', dummyEdgeData)
+            );
+
+            var result = myGraph.NodeBFS().ToList();
+
+            result.IndexOf('a').Should().BeLessThan(result.IndexOf('b'));
+            result.IndexOf('a').Should().BeLessThan(result.IndexOf('c'));
+            result.IndexOf('b').Should().BeLessThan(result.IndexOf('d'));
+            result.IndexOf('c').Should().BeLessThan(result.IndexOf('e'));
+        }
+
+        [Test]
+        public void LexicographicBFS()
+        {
+            var graph = new DirectedGraph<char, EdgeData>();
+            graph.AddNodes('a', 'b', 'c', 'd', 'e');
+            graph.AddEdges(
+                ('a', 'b', dummyEdgeData),
+                ('a', 'c', dummyEdgeData),
+                ('b', 'c', dummyEdgeData),
+                ('b', 'd', dummyEdgeData),
+                ('b', 'e', dummyEdgeData),
+                ('c', 'd', dummyEdgeData),
+                ('d', 'e', dummyEdgeData)
+            );
+
+            graph.LexicographicBFS().Should().ContainInOrder(new char[] { 'a', 'b', 'c', 'd', 'e' });
         }
 
         [Test]
