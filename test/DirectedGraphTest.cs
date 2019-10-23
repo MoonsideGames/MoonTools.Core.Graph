@@ -8,8 +8,6 @@ using MoonTools.Core.Graph;
 
 namespace Tests
 {
-    struct EdgeData { }
-
     public class DirectedGraphTest
     {
         EdgeData dummyEdgeData;
@@ -399,17 +397,12 @@ namespace Tests
             myGraph.Exists((1, 2)).Should().BeTrue();
         }
 
-        struct TestEdgeData
-        {
-            public int testNum;
-        }
-
         [Test]
         public void EdgeData()
         {
-            var myGraph = new DirectedGraph<int, TestEdgeData>();
+            var myGraph = new DirectedGraph<int, NumEdgeData>();
             myGraph.AddNodes(1, 2);
-            myGraph.AddEdge(1, 2, new TestEdgeData { testNum = 4 });
+            myGraph.AddEdge(1, 2, new NumEdgeData { testNum = 4 });
 
             myGraph.EdgeData((1, 2)).testNum.Should().Be(4);
         }

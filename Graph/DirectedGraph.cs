@@ -10,7 +10,7 @@ namespace MoonTools.Core.Graph
         finish
     }
 
-    public class DirectedGraph<TNode, TEdgeData> : IGraph<TNode, TEdgeData>
+    public class DirectedGraph<TNode, TEdgeData> : IGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
     {
         protected HashSet<TNode> nodes = new HashSet<TNode>();
         protected HashSet<(TNode, TNode)> edges = new HashSet<(TNode, TNode)>();

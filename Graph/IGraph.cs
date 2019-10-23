@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace MoonTools.Core.Graph
 {
-    public interface IGraph<TNode, TEdgeData>
+    public interface IGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
     {
         IEnumerable<TNode> Nodes { get; }
 
