@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Collections.Generic;
+using Collections.Pooled;
 
 namespace MoonTools.Core.Graph
 {
@@ -21,7 +22,7 @@ namespace MoonTools.Core.Graph
                     .All(pair =>
                     {
                         var (node, index) = pair;
-                        var successors = lexicographicOrder.Skip(index - 1).Take(nodes.Count - index - 1);
+                        var successors = lexicographicOrder.Skip(index).Take(nodes.Count - index);
                         return Clique(Neighbors(node).Intersect(successors).Union(Enumerable.Repeat(node, 1)));
                     });
             }
@@ -31,9 +32,9 @@ namespace MoonTools.Core.Graph
         {
             get
             {
-                var colors = new Dictionary<TNode, Color>();
-                var d = new Dictionary<TNode, int>();
-                var partition = new Dictionary<TNode, int>();
+                var colors = new PooledDictionary<TNode, Color>();
+                var d = new PooledDictionary<TNode, int>();
+                var partition = new PooledDictionary<TNode, int>();
 
                 foreach (var node in Nodes)
                 {
@@ -47,7 +48,7 @@ namespace MoonTools.Core.Graph
                 partition[start] = 1;
                 d[start] = 0;
 
-                var stack = new Stack<TNode>();
+                var stack = new PooledStack<TNode>();
                 stack.Push(start);
 
                 while (stack.Count > 0)
@@ -67,6 +68,11 @@ namespace MoonTools.Core.Graph
                     stack.Pop();
                     colors[node] = Color.Black;
                 }
+
+                stack.Dispose();
+                colors.Dispose();
+                d.Dispose();
+                partition.Dispose();
 
                 return true;
             }

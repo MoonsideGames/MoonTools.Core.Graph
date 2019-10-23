@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Collections.Pooled;
 
 namespace MoonTools.Core.Graph
 {
@@ -80,13 +81,11 @@ namespace MoonTools.Core.Graph
             return neighbors[node].Count;
         }
 
-        readonly List<(TNode, TNode)> edgesToRemove = new List<(TNode, TNode)>();
-
         public void RemoveNode(TNode node)
         {
             CheckNodes(node);
 
-            edgesToRemove.Clear();
+            var edgesToRemove = new PooledList<(TNode, TNode)>(ClearMode.Always);
 
             foreach (var entry in neighbors)
             {
@@ -100,6 +99,8 @@ namespace MoonTools.Core.Graph
             {
                 RemoveEdge(edge.Item1, edge.Item2);
             }
+
+            edgesToRemove.Dispose();
 
             nodes.Remove(node);
             neighbors.Remove(node);
@@ -149,13 +150,10 @@ namespace MoonTools.Core.Graph
             return neighbors[node];
         }
 
-        readonly Stack<TNode> dfsStack = new Stack<TNode>();
-        readonly HashSet<TNode> dfsDiscovered = new HashSet<TNode>();
-
         public IEnumerable<TNode> PreorderNodeDFS()
         {
-            dfsStack.Clear();
-            dfsDiscovered.Clear();
+            var dfsStack = new PooledStack<TNode>(ClearMode.Always);
+            var dfsDiscovered = new PooledSet<TNode>(ClearMode.Always);
 
             foreach (var node in Nodes)
             {
@@ -177,75 +175,49 @@ namespace MoonTools.Core.Graph
                     }
                 }
             }
+
+            dfsStack.Dispose();
+            dfsDiscovered.Dispose();
         }
 
-        // public IEnumerable<TNode> PostorderNodeDFS()
-        // {
-        //     dfsStack.Clear();
-        //     dfsDiscovered.Clear();
+        private IEnumerable<TNode> PostorderNodeDFSHelper(PooledSet<TNode> discovered, TNode v)
+        {
+            discovered.Add(v);
 
-        //     foreach (var node in Nodes)
-        //     {
-        //         if (!dfsDiscovered.Contains(node))
-        //         {
-        //             dfsStack.Push(node);
-        //             while (dfsStack.Count > 0)
-        //             {
-        //                 var current = dfsStack.Pop();
-        //                 if (!dfsDiscovered.Contains(current))
-        //                 {
-        //                     dfsDiscovered.Add(current);
-        //                     foreach (var neighbor in Neighbors(current))
-        //                     {
-        //                         dfsStack.Push(neighbor);
-        //                     }
-        //                     yield return current;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+            foreach (var neighbor in Neighbors(v))
+            {
+                if (!discovered.Contains(neighbor))
+                {
+                    foreach (var node in PostorderNodeDFSHelper(discovered, neighbor))
+                    {
+                        yield return node;
+                    }
+                }
+            }
 
-        List<TNode> postorderOutput = new List<TNode>();
+            yield return v;
+        }
 
         public IEnumerable<TNode> PostorderNodeDFS()
         {
-            dfsDiscovered.Clear();
-            postorderOutput.Clear();
-
-            void dfsHelper(TNode v) // refactor this to remove closure
-            {
-                dfsDiscovered.Add(v);
-
-                foreach (var neighbor in Neighbors(v))
-                {
-                    if (!dfsDiscovered.Contains(neighbor))
-                    {
-                        dfsHelper(neighbor);
-                    }
-                }
-
-                postorderOutput.Add(v);
-            }
+            var dfsDiscovered = new PooledSet<TNode>(ClearMode.Always);
 
             foreach (var node in Nodes)
             {
                 if (!dfsDiscovered.Contains(node))
                 {
-                    dfsHelper(node);
+                    foreach (var thing in PostorderNodeDFSHelper(dfsDiscovered, node))
+                    {
+                        yield return thing;
+                    }
                 }
             }
-
-            return postorderOutput;
         }
-
-        readonly Queue<TNode> bfsQueue = new Queue<TNode>();
-        readonly HashSet<TNode> bfsDiscovered = new HashSet<TNode>();
 
         public IEnumerable<TNode> NodeBFS()
         {
-            bfsQueue.Clear();
-            bfsDiscovered.Clear();
+            var bfsQueue = new PooledQueue<TNode>(ClearMode.Always);
+            var bfsDiscovered = new PooledSet<TNode>(ClearMode.Always);
 
             foreach (var node in Nodes)
             {
@@ -267,49 +239,54 @@ namespace MoonTools.Core.Graph
                     }
                 }
             }
+
+            bfsQueue.Dispose();
+            bfsDiscovered.Dispose();
         }
 
-        // hoo boy this is bad for the GC
+        List<PooledSet<TNode>> lexicographicSets = new List<PooledSet<TNode>>();
+        HashSet<PooledSet<TNode>> replacedSets = new HashSet<PooledSet<TNode>>();
+
         public IEnumerable<TNode> LexicographicBFS()
         {
-            var sets = new List<List<TNode>>();
-            sets.Add(Nodes.ToList());
+            lexicographicSets.Add(Nodes.ToPooledSet());
 
-            while (sets.Count > 0)
+            while (lexicographicSets.Count > 0)
             {
-                var firstSet = sets[0];
-                var node = firstSet[0];
-                firstSet.RemoveAt(0);
-                if (firstSet.Count == 0) { sets.RemoveAt(0); }
+                var firstSet = lexicographicSets[0];
+                var node = firstSet.First();
+                firstSet.Remove(node);
+                if (firstSet.Count == 0) { lexicographicSets.RemoveAt(0); }
 
                 yield return node;
 
-                var replaced = new List<List<TNode>>();
-
                 foreach (var neighbor in Neighbors(node))
                 {
-                    if (sets.Any(set => set.Contains(neighbor)))
+                    if (lexicographicSets.Any(set => set.Contains(neighbor)))
                     {
-                        var s = sets.Find(set => set.Contains(neighbor));
-                        var sIndex = sets.IndexOf(s);
-                        List<TNode> t;
-                        if (replaced.Contains(s))
+                        var s = lexicographicSets.Find(set => set.Contains(neighbor));
+                        var sIndex = lexicographicSets.IndexOf(s);
+                        PooledSet<TNode> t;
+                        if (replacedSets.Contains(s) && sIndex > 0)
                         {
-                            t = sets[sIndex - 1];
+                            t = lexicographicSets[sIndex - 1];
                         }
                         else
                         {
-                            t = new List<TNode>();
-                            sets.Insert(sIndex, t);
-                            replaced.Add(s);
+                            t = new PooledSet<TNode>(ClearMode.Always);
+                            lexicographicSets.Insert(sIndex, t);
+                            replacedSets.Add(s);
                         }
 
                         s.Remove(neighbor);
                         t.Add(neighbor);
-                        if (s.Count == 0) { sets.Remove(s); }
+                        if (s.Count == 0) { lexicographicSets.Remove(s); replacedSets.Remove(s); }
                     }
                 }
             }
+
+            lexicographicSets.Clear();
+            replacedSets.Clear();
         }
 
         public bool Cyclic()
