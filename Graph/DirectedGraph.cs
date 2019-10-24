@@ -5,19 +5,8 @@ using Collections.Pooled;
 
 namespace MoonTools.Core.Graph
 {
-    public enum SearchSymbol
+    public class DirectedGraph<TNode, TEdgeData> : SimpleGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
     {
-        Start,
-        Finish
-    }
-
-    public class DirectedGraph<TNode, TEdgeData> : IGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
-    {
-        protected HashSet<TNode> nodes = new HashSet<TNode>();
-        protected HashSet<(TNode, TNode)> edges = new HashSet<(TNode, TNode)>();
-        protected Dictionary<(TNode, TNode), TEdgeData> edgesToEdgeData = new Dictionary<(TNode, TNode), TEdgeData>();
-        protected Dictionary<TNode, HashSet<TNode>> neighbors = new Dictionary<TNode, HashSet<TNode>>();
-
         private class SimpleCycleComparer : IEqualityComparer<IEnumerable<TNode>>
         {
             public bool Equals(IEnumerable<TNode> x, IEnumerable<TNode> y)
@@ -29,56 +18,6 @@ namespace MoonTools.Core.Graph
             {
                 return obj.Aggregate(0, (current, next) => current.GetHashCode() ^ next.GetHashCode());
             }
-        }
-
-        public IEnumerable<TNode> Nodes => nodes;
-        public IEnumerable<(TNode, TNode)> Edges => edges;
-
-        public int Order => nodes.Count;
-        public int Size => edges.Count;
-
-        public void AddNode(TNode node)
-        {
-            if (!Exists(node))
-            {
-                nodes.Add(node);
-                neighbors.Add(node, new HashSet<TNode>());
-            }
-        }
-
-        public void AddNodes(params TNode[] nodes)
-        {
-            foreach (var node in nodes)
-            {
-                AddNode(node);
-            }
-        }
-
-        public bool Exists(TNode node)
-        {
-            return nodes.Contains(node);
-        }
-
-        public bool Exists(TNode v, TNode u)
-        {
-            return edges.Contains((v, u));
-        }
-
-        private void CheckNodes(params TNode[] givenNodes)
-        {
-            foreach (var node in givenNodes)
-            {
-                if (!Exists(node))
-                {
-                    throw new ArgumentException($"Vertex {node} does not exist in the graph");
-                }
-            }
-        }
-
-        public int Degree(TNode node)
-        {
-            CheckNodes(node);
-            return neighbors[node].Count;
         }
 
         public void RemoveNode(TNode node)
@@ -114,7 +53,7 @@ namespace MoonTools.Core.Graph
 
             neighbors[v].Add(u);
             edges.Add((v, u));
-            edgesToEdgeData.Add((v, u), edgeData);
+            edgeToEdgeData.Add((v, u), edgeData);
         }
 
         public virtual void AddEdges(params (TNode, TNode, TEdgeData)[] edges)
@@ -125,31 +64,12 @@ namespace MoonTools.Core.Graph
             }
         }
 
-        private void CheckEdge(TNode v, TNode u)
-        {
-            CheckNodes(v, u);
-            if (!Exists(v, u)) { throw new ArgumentException($"Edge between vertex {v} and vertex {u} does not exist in the graph"); }
-        }
-
         public virtual void RemoveEdge(TNode v, TNode u)
         {
             CheckEdge(v, u);
             neighbors[v].Remove(u);
             edges.Remove((v, u));
-            edgesToEdgeData.Remove((v, u));
-        }
-
-        public TEdgeData EdgeData(TNode v, TNode u)
-        {
-            CheckEdge(v, u);
-            return edgesToEdgeData[(v, u)];
-        }
-
-        public IEnumerable<TNode> Neighbors(TNode node)
-        {
-            CheckNodes(node);
-
-            return neighbors[node];
+            edgeToEdgeData.Remove((v, u));
         }
 
         public IEnumerable<TNode> PreorderNodeDFS()
@@ -549,12 +469,12 @@ namespace MoonTools.Core.Graph
             return subGraph;
         }
 
-        public void Clear()
+        public virtual void Clear()
         {
             nodes.Clear();
             neighbors.Clear();
             edges.Clear();
-            edgesToEdgeData.Clear();
+            edgeToEdgeData.Clear();
         }
     }
 }

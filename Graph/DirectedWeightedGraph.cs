@@ -6,51 +6,14 @@ using MoreLinq;
 
 namespace MoonTools.Core.Graph
 {
-    public class DirectedWeightedGraph<TNode, TEdgeData> : IGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
+    public class DirectedWeightedGraph<TNode, TEdgeData> : DirectedGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
     {
-        protected HashSet<TNode> nodes = new HashSet<TNode>();
-        protected Dictionary<TNode, HashSet<TNode>> neighbors = new Dictionary<TNode, HashSet<TNode>>();
-        protected Dictionary<(TNode, TNode), TEdgeData> edgeToEdgeData = new Dictionary<(TNode, TNode), TEdgeData>();
         protected Dictionary<(TNode, TNode), int> weights = new Dictionary<(TNode, TNode), int>();
-
-        public IEnumerable<TNode> Nodes => nodes;
-
-        public void AddNode(TNode node)
-        {
-            if (Exists(node)) { return; }
-
-            nodes.Add(node);
-            neighbors[node] = new HashSet<TNode>();
-        }
-
-        public void AddNodes(params TNode[] nodes)
-        {
-            foreach (var node in nodes)
-            {
-                AddNode(node);
-            }
-        }
-
-        private void CheckNodes(params TNode[] givenNodes)
-        {
-            foreach (var node in givenNodes)
-            {
-                if (!Exists(node))
-                {
-                    throw new ArgumentException($"Vertex {node} does not exist in the graph");
-                }
-            }
-        }
 
         public void AddEdge(TNode v, TNode u, int weight, TEdgeData data)
         {
-            CheckNodes(v, u);
-
-            if (Exists(v, u)) { throw new ArgumentException($"Edge with vertex {v} and {u} already exists in the graph"); }
-
-            neighbors[v].Add(u);
+            base.AddEdge(v, u, data);
             weights.Add((v, u), weight);
-            edgeToEdgeData.Add((v, u), data);
         }
 
         public void AddEdges(params (TNode, TNode, int, TEdgeData)[] edges)
@@ -61,44 +24,16 @@ namespace MoonTools.Core.Graph
             }
         }
 
-        public void Clear()
+        public override void Clear()
         {
-            nodes.Clear();
-            neighbors.Clear();
-            edgeToEdgeData.Clear();
+            base.Clear();
             weights.Clear();
-        }
-
-        public bool Exists(TNode node) => nodes.Contains(node);
-
-        public bool Exists(TNode v, TNode u)
-        {
-            CheckNodes(v, u);
-            return neighbors[v].Contains(u);
-        }
-
-        public IEnumerable<TNode> Neighbors(TNode node)
-        {
-            CheckNodes(node);
-            return neighbors[node];
-        }
-
-        private void CheckEdge(TNode v, TNode u)
-        {
-            CheckNodes(v, u);
-            if (!Exists(v, u)) { throw new ArgumentException($"Edge between vertex {v} and vertex {u} does not exist in the graph"); }
         }
 
         public int Weight(TNode v, TNode u)
         {
             CheckEdge(v, u);
             return weights[(v, u)];
-        }
-
-        public TEdgeData EdgeData(TNode v, TNode u)
-        {
-            CheckEdge(v, u);
-            return edgeToEdgeData[(v, u)];
         }
 
         private IEnumerable<(TNode, TNode)> ReconstructPath(PooledDictionary<TNode, TNode> cameFrom, TNode currentNode)

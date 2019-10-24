@@ -6,7 +6,7 @@ using MoreLinq;
 
 namespace MoonTools.Core.Graph
 {
-    public class DirectedWeightedMultiGraph<TNode, TEdgeData> : IGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
+    public class DirectedWeightedMultiGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
     {
         protected HashSet<TNode> nodes = new HashSet<TNode>();
         protected Dictionary<TNode, HashSet<TNode>> neighbors = new Dictionary<TNode, HashSet<TNode>>();
@@ -14,13 +14,6 @@ namespace MoonTools.Core.Graph
         protected Dictionary<Guid, (TNode, TNode)> IDToEdge = new Dictionary<Guid, (TNode, TNode)>();
         protected Dictionary<Guid, int> weights = new Dictionary<Guid, int>();
         protected Dictionary<Guid, TEdgeData> edgeToEdgeData = new Dictionary<Guid, TEdgeData>();
-
-        // store search sets to prevent GC
-        protected HashSet<TNode> openSet = new HashSet<TNode>();
-        protected HashSet<TNode> closedSet = new HashSet<TNode>();
-        protected Dictionary<TNode, int> gScore = new Dictionary<TNode, int>();
-        protected Dictionary<TNode, int> fScore = new Dictionary<TNode, int>();
-        protected Dictionary<TNode, Guid> cameFrom = new Dictionary<TNode, Guid>();
 
         public IEnumerable<TNode> Nodes => nodes;
 
