@@ -1,6 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <Version>1.0.0</Version>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Description>A GC-friendly graph theory library for .NET Core intended for use with games.</Description>
+    <PackageId>MoonTools.Core.Graph</PackageId>
+    <RootNamespace>MoonTools.Core.Graph</RootNamespace>
+    <Company>Moonside Games</Company>
+    <Authors>Evan Hemsley</Authors>
+    <Copyright>Evan Hemsley 2019</Copyright>
+    <Product>MoonTools.Core.Graph</Product>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <AssemblyName>MoonTools.Core.Graph</AssemblyName>
+    <PackageLicenseExpression>LGPL-3.0-only</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/MoonsideGames/MoonTools.Core.Graph</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="morelinq" Version="3.2.0"/>
