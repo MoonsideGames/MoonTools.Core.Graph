@@ -252,5 +252,241 @@ namespace Tests
             // have to call Count() because otherwise the lazy evaluation wont trigger
             myGraph.Invoking(x => x.AStarShortestPath('a', 'z', (x, y) => 1).Count()).Should().Throw<System.ArgumentException>();
         }
+
+        [Test]
+        public void DijsktraSingleSourceShortestPath()
+        {
+            var run = new MoveTypeEdgeData { moveType = MoveType.Run };
+            var jump = new MoveTypeEdgeData { moveType = MoveType.Jump };
+            var wallJump = new MoveTypeEdgeData { moveType = MoveType.WallJump };
+
+            var myGraph = new DirectedWeightedMultiGraph<char, MoveTypeEdgeData>();
+            myGraph.AddNodes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h');
+
+            var edgeA = myGraph.AddEdge('a', 'b', 2, run);
+            var edgeB = myGraph.AddEdge('a', 'c', 1, jump);
+            var edgeC = myGraph.AddEdge('b', 'd', 2, jump);
+            var edgeD = myGraph.AddEdge('b', 'e', 1, run);
+            var edgeE = myGraph.AddEdge('d', 'f', 2, run);
+            var edgeF = myGraph.AddEdge('c', 'g', 2, run);
+            var edgeG = myGraph.AddEdge('d', 'h', 3, wallJump);
+
+            myGraph.AddEdges(
+                ('a', 'c', 3, run),
+                ('a', 'e', 4, wallJump),
+                ('b', 'd', 5, run),
+                ('c', 'g', 4, jump),
+                ('c', 'h', 11, run),
+                ('d', 'c', 3, jump),
+                ('e', 'f', 5, run),
+                ('f', 'd', 2, run),
+                ('f', 'h', 6, wallJump),
+                ('g', 'h', 7, run),
+                ('h', 'f', 1, jump),
+                ('a', 'a', 3, jump) // cheeky lil self-edge
+            );
+
+            myGraph
+                .DijkstraSingleSourceShortestPath('a')
+                .Should()
+                .Contain(('b', edgeA, 2)).And
+                .Contain(('c', edgeB, 1)).And
+                .Contain(('d', edgeC, 4)).And
+                .Contain(('e', edgeD, 3)).And
+                .Contain(('f', edgeE, 6)).And
+                .Contain(('g', edgeF, 3)).And
+                .Contain(('h', edgeG, 7)).And
+                .HaveCount(7);
+
+            // have to call Count() because otherwise the lazy evaluation wont trigger
+            myGraph.Invoking(x => x.DijkstraSingleSourceShortestPath('z').Count()).Should().Throw<System.ArgumentException>();
+        }
+
+        [Test]
+        public void DijkstraShortestPath()
+        {
+            var run = new MoveTypeEdgeData { moveType = MoveType.Run };
+            var jump = new MoveTypeEdgeData { moveType = MoveType.Jump };
+            var wallJump = new MoveTypeEdgeData { moveType = MoveType.WallJump };
+
+            var myGraph = new DirectedWeightedMultiGraph<char, MoveTypeEdgeData>();
+            myGraph.AddNodes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h');
+
+            var edgeA = myGraph.AddEdge('a', 'b', 2, run);
+            var edgeB = myGraph.AddEdge('a', 'c', 1, jump);
+            var edgeC = myGraph.AddEdge('b', 'd', 2, jump);
+            var edgeD = myGraph.AddEdge('b', 'e', 1, run);
+            var edgeE = myGraph.AddEdge('d', 'f', 2, run);
+            var edgeF = myGraph.AddEdge('c', 'g', 2, run);
+            var edgeG = myGraph.AddEdge('d', 'h', 3, wallJump);
+
+            myGraph.AddEdges(
+                ('a', 'c', 3, run),
+                ('a', 'e', 4, wallJump),
+                ('b', 'd', 5, run),
+                ('c', 'g', 4, jump),
+                ('c', 'h', 11, run),
+                ('d', 'c', 3, jump),
+                ('e', 'f', 5, run),
+                ('f', 'd', 2, run),
+                ('f', 'h', 6, wallJump),
+                ('g', 'h', 7, run),
+                ('h', 'f', 1, jump),
+                ('a', 'a', 3, jump) // cheeky lil self-edge
+            );
+
+            myGraph
+                .DijkstraShortestPath('a', 'h')
+                .Select(edgeID => myGraph.EdgeData(edgeID))
+                .Should()
+                .ContainInOrder(
+                    run, jump, wallJump
+                )
+                .And
+                .HaveCount(3);
+
+            myGraph.Invoking(x => x.DijkstraShortestPath('a', 'z').Count()).Should().Throw<System.ArgumentException>();
+        }
+
+        [Test]
+        public void BellmanFordSingleSourceShortestPath()
+        {
+            var run = new MoveTypeEdgeData { moveType = MoveType.Run };
+            var jump = new MoveTypeEdgeData { moveType = MoveType.Jump };
+            var wallJump = new MoveTypeEdgeData { moveType = MoveType.WallJump };
+
+            var myGraph = new DirectedWeightedMultiGraph<char, MoveTypeEdgeData>();
+            myGraph.AddNodes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h');
+
+            var edgeA = myGraph.AddEdge('a', 'b', 2, run);
+            var edgeB = myGraph.AddEdge('a', 'c', 1, jump);
+            var edgeC = myGraph.AddEdge('b', 'd', 2, jump);
+            var edgeD = myGraph.AddEdge('b', 'e', 1, run);
+            var edgeE = myGraph.AddEdge('d', 'f', 2, run);
+            var edgeF = myGraph.AddEdge('c', 'g', 2, run);
+            var edgeG = myGraph.AddEdge('d', 'h', 3, wallJump);
+
+            myGraph.AddEdges(
+                ('a', 'c', 3, run),
+                ('a', 'e', 4, wallJump),
+                ('b', 'd', 5, run),
+                ('c', 'g', 4, jump),
+                ('c', 'h', 11, run),
+                ('d', 'c', 3, jump),
+                ('e', 'f', 5, run),
+                ('f', 'd', 2, run),
+                ('f', 'h', 6, wallJump),
+                ('g', 'h', 7, run),
+                ('h', 'f', 1, jump),
+                ('a', 'a', 3, jump) // cheeky lil self-edge
+            );
+
+            myGraph
+                .BellmanFordSingleSourceShortestPath('a')
+                .Should()
+                .Contain(('b', edgeA, 2)).And
+                .Contain(('c', edgeB, 1)).And
+                .Contain(('d', edgeC, 4)).And
+                .Contain(('e', edgeD, 3)).And
+                .Contain(('f', edgeE, 6)).And
+                .Contain(('g', edgeF, 3)).And
+                .Contain(('h', edgeG, 7)).And
+                .HaveCount(7);
+
+            // have to call Count() because otherwise the lazy evaluation wont trigger
+            myGraph.Invoking(x => x.BellmanFordSingleSourceShortestPath('z').Count()).Should().Throw<System.ArgumentException>();
+        }
+
+        [Test]
+        public void BellmanFordSingleSourceShortestPathNegative()
+        {
+            var run = new MoveTypeEdgeData { moveType = MoveType.Run };
+            var jump = new MoveTypeEdgeData { moveType = MoveType.Jump };
+            var wallJump = new MoveTypeEdgeData { moveType = MoveType.WallJump };
+
+            var myGraph = new DirectedWeightedMultiGraph<char, MoveTypeEdgeData>();
+            myGraph.AddNodes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h');
+
+            var edgeA = myGraph.AddEdge('a', 'b', 2, run);
+            var edgeB = myGraph.AddEdge('a', 'c', 1, jump);
+            var edgeC = myGraph.AddEdge('b', 'd', -1, jump);
+            var edgeD = myGraph.AddEdge('b', 'e', 1, run);
+            var edgeE = myGraph.AddEdge('d', 'f', 2, run);
+            var edgeF = myGraph.AddEdge('c', 'g', 2, run);
+            var edgeG = myGraph.AddEdge('d', 'h', 3, wallJump);
+
+            myGraph.AddEdges(
+                ('a', 'c', 3, run),
+                ('a', 'e', 4, wallJump),
+                ('b', 'd', 5, run),
+                ('c', 'g', 4, jump),
+                ('c', 'h', 11, run),
+                ('d', 'c', 3, jump),
+                ('e', 'f', 5, run),
+                ('f', 'd', 2, run),
+                ('f', 'h', 6, wallJump),
+                ('g', 'h', 7, run),
+                ('h', 'f', 1, jump),
+                ('a', 'a', 3, jump) // cheeky lil self-edge
+            );
+
+            myGraph
+                .BellmanFordSingleSourceShortestPath('a')
+                .Should()
+                .Contain(('b', edgeA, 2)).And
+                .Contain(('c', edgeB, 1)).And
+                .Contain(('d', edgeC, 1)).And
+                .Contain(('e', edgeD, 3)).And
+                .Contain(('f', edgeE, 3)).And
+                .Contain(('g', edgeF, 3)).And
+                .Contain(('h', edgeG, 4)).And
+                .HaveCount(7);
+        }
+
+        [Test]
+        public void BellmanFordShortestPath()
+        {
+            var run = new MoveTypeEdgeData { moveType = MoveType.Run };
+            var jump = new MoveTypeEdgeData { moveType = MoveType.Jump };
+            var wallJump = new MoveTypeEdgeData { moveType = MoveType.WallJump };
+
+            var myGraph = new DirectedWeightedMultiGraph<char, MoveTypeEdgeData>();
+            myGraph.AddNodes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h');
+
+            var edgeA = myGraph.AddEdge('a', 'b', 2, run);
+            var edgeB = myGraph.AddEdge('a', 'c', 1, jump);
+            var edgeC = myGraph.AddEdge('b', 'd', 2, jump);
+            var edgeD = myGraph.AddEdge('b', 'e', 1, run);
+            var edgeE = myGraph.AddEdge('d', 'f', 2, run);
+            var edgeF = myGraph.AddEdge('c', 'g', 2, run);
+            var edgeG = myGraph.AddEdge('d', 'h', 3, wallJump);
+
+            myGraph.AddEdges(
+                ('a', 'c', 3, run),
+                ('a', 'e', 4, wallJump),
+                ('b', 'd', 5, run),
+                ('c', 'g', 4, jump),
+                ('c', 'h', 11, run),
+                ('d', 'c', 3, jump),
+                ('e', 'f', 5, run),
+                ('f', 'd', 2, run),
+                ('f', 'h', 6, wallJump),
+                ('g', 'h', 7, run),
+                ('h', 'f', 1, jump),
+                ('a', 'a', 3, jump) // cheeky lil self-edge
+            );
+
+            myGraph
+                .BellmanFordShortestPath('a', 'h')
+                .Select(edgeID => myGraph.EdgeData(edgeID))
+                .Should()
+                .ContainInOrder(
+                    run, jump, wallJump
+                )
+                .And
+                .HaveCount(3);
+
+            myGraph.Invoking(x => x.BellmanFordShortestPath('a', 'z').Count()).Should().Throw<System.ArgumentException>();
+        }
     }
 }

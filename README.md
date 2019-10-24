@@ -4,7 +4,7 @@ A GC-friendly graph theory library for C# intended for use with games.
 
 ## Usage
 
-`Graph` implements the following graph structures:
+`Graph` implements various algorithms on the following graph structures:
 
 * Directed
 * Directed Weighted

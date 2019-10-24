@@ -47,13 +47,25 @@ namespace MoonTools.Core.Graph
             return edges.ContainsKey((v, u));
         }
 
+        private void CheckID(Guid id)
+        {
+            if (!Exists(id)) { throw new ArgumentException($"Edge {id} does not exist in the graph."); }
+        }
+
+        public bool Exists(Guid id)
+        {
+            return IDToEdge.ContainsKey(id);
+        }
+
+        public (TNode, TNode) EdgeNodes(Guid id)
+        {
+            CheckID(id);
+            return IDToEdge[id];
+        }
+
         public TEdgeData EdgeData(Guid id)
         {
-            if (!edgeToEdgeData.ContainsKey(id))
-            {
-                throw new ArgumentException($"Edge {id} does not exist in the graph.");
-            }
-
+            CheckID(id);
             return edgeToEdgeData[id];
         }
     }
