@@ -113,8 +113,38 @@ namespace MoonTools.Core.Graph
             yield break;
         }
 
+        private IEnumerable<(TNode, TNode)> ShortestPath(TNode start, TNode end, Func<TNode, IEnumerable<(TNode, TNode, int)>> SSSPAlgorithm)
+        {
+            CheckNodes(start, end);
+
+            var cameFrom = new PooledDictionary<TNode, TNode>(ClearMode.Always);
+            var reachable = new PooledSet<TNode>(ClearMode.Always);
+
+            foreach (var (node, previous, weight) in SSSPAlgorithm(start))
+            {
+                cameFrom[node] = previous;
+                reachable.Add(node);
+            }
+
+            if (!reachable.Contains(end))
+            {
+                cameFrom.Dispose();
+                reachable.Dispose();
+                yield break;
+            }
+
+            foreach (var edge in ReconstructPath(cameFrom, end).Reverse())
+            {
+                yield return edge;
+            }
+
+            cameFrom.Dispose();
+            reachable.Dispose();
+        }
+
         public IEnumerable<(TNode, TNode, int)> DijkstraSingleSourceShortestPath(TNode source)
         {
+            if (weights.Values.Any(w => w < 0)) { throw new NegativeWeightException("Dijkstra cannot be used on a graph with negative edge weights. Try Bellman-Ford"); }
             CheckNodes(source);
 
             var distance = new PooledDictionary<TNode, int>(ClearMode.Always);
@@ -148,7 +178,7 @@ namespace MoonTools.Core.Graph
 
             foreach (var node in Nodes)
             {
-                if (!node.Equals(source))
+                if (previous.ContainsKey(node) && distance.ContainsKey(node))
                 {
                     yield return (node, previous[node], distance[node]);
                 }
@@ -156,6 +186,63 @@ namespace MoonTools.Core.Graph
 
             distance.Dispose();
             previous.Dispose();
+        }
+
+        public IEnumerable<(TNode, TNode)> DijkstraShortestPath(TNode start, TNode end)
+        {
+            return ShortestPath(start, end, DijkstraSingleSourceShortestPath);
+        }
+
+        public IEnumerable<(TNode, TNode, int)> BellmanFordSingleSourceShortestPath(TNode source)
+        {
+            CheckNodes(source);
+
+            var distance = new PooledDictionary<TNode, int>(ClearMode.Always);
+            var previous = new PooledDictionary<TNode, TNode>(ClearMode.Always);
+
+            foreach (var node in Nodes)
+            {
+                distance[node] = int.MaxValue;
+            }
+
+            distance[source] = 0;
+
+            for (int i = 0; i < Order; i++)
+            {
+                foreach (var (v, u) in Edges)
+                {
+                    var weight = Weight(v, u);
+                    if (distance[v] + weight < distance[u])
+                    {
+                        distance[u] = distance[v] + weight;
+                        previous[u] = v;
+                    }
+                }
+            }
+
+            foreach (var (v, u) in Edges)
+            {
+                if (distance[v] + Weight(v, u) < distance[u])
+                {
+                    throw new NegativeCycleException();
+                }
+            }
+
+            foreach (var node in Nodes)
+            {
+                if (previous.ContainsKey(node) && distance.ContainsKey(node))
+                {
+                    yield return (node, previous[node], distance[node]);
+                }
+            }
+
+            distance.Dispose();
+            previous.Dispose();
+        }
+
+        public IEnumerable<(TNode, TNode)> BellmanFordShortestPath(TNode start, TNode end)
+        {
+            return ShortestPath(start, end, BellmanFordSingleSourceShortestPath);
         }
     }
 }
