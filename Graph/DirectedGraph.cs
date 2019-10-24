@@ -20,6 +20,25 @@ namespace MoonTools.Core.Graph
             }
         }
 
+        public virtual void AddEdge(TNode v, TNode u, TEdgeData edgeData)
+        {
+            CheckNodes(v, u);
+
+            if (v.Equals(u)) { throw new ArgumentException("Self-edges are not allowed in a simple graph. Use a multigraph instead"); }
+
+            neighbors[v].Add(u);
+            edges.Add((v, u));
+            edgeToEdgeData.Add((v, u), edgeData);
+        }
+
+        public virtual void AddEdges(params (TNode, TNode, TEdgeData)[] edges)
+        {
+            foreach (var edge in edges)
+            {
+                AddEdge(edge.Item1, edge.Item2, edge.Item3);
+            }
+        }
+
         public void RemoveNode(TNode node)
         {
             CheckNodes(node);
@@ -43,25 +62,6 @@ namespace MoonTools.Core.Graph
 
             nodes.Remove(node);
             neighbors.Remove(node);
-        }
-
-        public virtual void AddEdge(TNode v, TNode u, TEdgeData edgeData)
-        {
-            CheckNodes(v, u);
-
-            if (v.Equals(u)) { throw new ArgumentException("Self-edges are not allowed in a simple graph. Use a multigraph instead"); }
-
-            neighbors[v].Add(u);
-            edges.Add((v, u));
-            edgeToEdgeData.Add((v, u), edgeData);
-        }
-
-        public virtual void AddEdges(params (TNode, TNode, TEdgeData)[] edges)
-        {
-            foreach (var edge in edges)
-            {
-                AddEdge(edge.Item1, edge.Item2, edge.Item3);
-            }
         }
 
         public virtual void RemoveEdge(TNode v, TNode u)
@@ -469,12 +469,9 @@ namespace MoonTools.Core.Graph
             return subGraph;
         }
 
-        public virtual void Clear()
+        public override void Clear()
         {
-            nodes.Clear();
-            neighbors.Clear();
-            edges.Clear();
-            edgeToEdgeData.Clear();
+            base.Clear();
         }
     }
 }

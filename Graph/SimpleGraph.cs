@@ -29,5 +29,12 @@ namespace MoonTools.Core.Graph
             CheckNodes(v, u);
             if (!Exists(v, u)) { throw new ArgumentException($"Edge between vertex {v} and vertex {u} does not exist in the graph"); }
         }
+
+        public override void Clear()
+        {
+            base.Clear();
+            edges.Clear();
+            edgeToEdgeData.Clear();
+        }
     }
 }

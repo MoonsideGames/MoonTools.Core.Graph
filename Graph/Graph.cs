@@ -1,11 +1,12 @@
 using System.Collections.Generic;
+using Collections.Pooled;
 
 namespace MoonTools.Core.Graph
 {
     abstract public class Graph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
     {
         protected HashSet<TNode> nodes = new HashSet<TNode>();
-        protected Dictionary<TNode, HashSet<TNode>> neighbors = new Dictionary<TNode, HashSet<TNode>>();
+        protected Dictionary<TNode, PooledSet<TNode>> neighbors = new Dictionary<TNode, PooledSet<TNode>>();
 
         public IEnumerable<TNode> Nodes => nodes;
 
@@ -16,7 +17,7 @@ namespace MoonTools.Core.Graph
             if (!Exists(node))
             {
                 nodes.Add(node);
-                neighbors.Add(node, new HashSet<TNode>());
+                neighbors.Add(node, new PooledSet<TNode>(ClearMode.Always));
             }
         }
 
@@ -56,5 +57,10 @@ namespace MoonTools.Core.Graph
             }
         }
 
+        public virtual void Clear()
+        {
+            nodes.Clear();
+            neighbors.Clear();
+        }
     }
 }

@@ -6,17 +6,24 @@ using MoreLinq;
 
 namespace MoonTools.Core.Graph
 {
-    public class DirectedWeightedGraph<TNode, TEdgeData> : DirectedGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
+    public class DirectedWeightedGraph<TNode, TEdgeData> : SimpleGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
     {
         protected Dictionary<(TNode, TNode), int> weights = new Dictionary<(TNode, TNode), int>();
 
-        public void AddEdge(TNode v, TNode u, int weight, TEdgeData data)
+        public void AddEdge(TNode v, TNode u, int weight, TEdgeData edgeData)
         {
-            base.AddEdge(v, u, data);
+            CheckNodes(v, u);
+
+            if (v.Equals(u)) { throw new ArgumentException("Self-edges are not allowed in a simple graph. Use a multigraph instead"); }
+
+            neighbors[v].Add(u);
+            edges.Add((v, u));
+            edgeToEdgeData.Add((v, u), edgeData);
+
             weights.Add((v, u), weight);
         }
 
-        public void AddEdges(params (TNode, TNode, int, TEdgeData)[] edges)
+        public void AddEdges(params (TNode, TNode, int weight, TEdgeData)[] edges)
         {
             foreach (var edge in edges)
             {
