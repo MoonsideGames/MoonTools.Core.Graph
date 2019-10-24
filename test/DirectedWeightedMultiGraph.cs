@@ -235,7 +235,8 @@ namespace Tests
                 ('f', 'd', 2, run),
                 ('f', 'h', 6, wallJump),
                 ('g', 'h', 7, run),
-                ('h', 'f', 1, jump)
+                ('h', 'f', 1, jump),
+                ('a', 'a', 3, jump) // cheeky lil self-edge
             );
 
             myGraph

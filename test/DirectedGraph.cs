@@ -62,6 +62,15 @@ namespace Tests
         }
 
         [Test]
+        public void AddSelfEdge()
+        {
+            var myGraph = new DirectedGraph<int, EdgeData>();
+            myGraph.AddNodes(1, 2);
+
+            myGraph.Invoking(x => x.AddEdge(1, 1, dummyEdgeData)).Should().Throw<ArgumentException>();
+        }
+
+        [Test]
         public void Order()
         {
             var myGraph = new DirectedGraph<int, EdgeData>();
@@ -316,7 +325,6 @@ namespace Tests
             var myGraph = new DirectedGraph<int, EdgeData>();
             myGraph.AddNodes(1, 2, 3, 4);
             myGraph.AddEdges(
-                (1, 1, dummyEdgeData),
                 (1, 2, dummyEdgeData),
                 (2, 3, dummyEdgeData),
                 (2, 1, dummyEdgeData),
@@ -326,7 +334,7 @@ namespace Tests
             var clone = myGraph.Clone();
             Assert.That(clone, Is.Not.EqualTo(myGraph));
             clone.Nodes.Should().BeEquivalentTo(1, 2, 3, 4);
-            clone.Neighbors(1).Should().BeEquivalentTo(1, 2);
+            clone.Neighbors(1).Should().BeEquivalentTo(2);
             clone.Neighbors(2).Should().BeEquivalentTo(3, 1);
             clone.Neighbors(3).Should().BeEquivalentTo(4);
         }
@@ -337,7 +345,6 @@ namespace Tests
             var myGraph = new DirectedGraph<int, EdgeData>();
             myGraph.AddNodes(1, 2, 3, 4);
             myGraph.AddEdges(
-                (1, 1, dummyEdgeData),
                 (1, 2, dummyEdgeData),
                 (2, 3, dummyEdgeData),
                 (2, 1, dummyEdgeData),
@@ -346,7 +353,7 @@ namespace Tests
 
             var subGraph = myGraph.SubGraph(1, 2, 3);
             subGraph.Nodes.Should().BeEquivalentTo(1, 2, 3);
-            subGraph.Neighbors(1).Should().BeEquivalentTo(1, 2);
+            subGraph.Neighbors(1).Should().BeEquivalentTo(2);
             subGraph.Neighbors(2).Should().BeEquivalentTo(1, 3);
             subGraph.Neighbors(3).Should().NotContain(4);
         }
@@ -357,29 +364,23 @@ namespace Tests
             var myGraph = new DirectedGraph<int, EdgeData>();
             myGraph.AddNodes(0, 1, 2);
             myGraph.AddEdges(
-                (0, 0, dummyEdgeData),
                 (0, 1, dummyEdgeData),
                 (0, 2, dummyEdgeData),
                 (1, 2, dummyEdgeData),
                 (2, 0, dummyEdgeData),
-                (2, 1, dummyEdgeData),
-                (2, 2, dummyEdgeData)
+                (2, 1, dummyEdgeData)
             );
 
             var result = myGraph.SimpleCycles();
 
-            var cycleA = new int[] { 0 };
-            var cycleB = new int[] { 0, 1, 2 };
-            var cycleC = new int[] { 0, 2 };
-            var cycleD = new int[] { 1, 2 };
-            var cycleE = new int[] { 2 };
+            var cycleA = new int[] { 0, 1, 2 };
+            var cycleB = new int[] { 0, 2 };
+            var cycleC = new int[] { 1, 2 };
 
             result.Should().ContainEquivalentOf(cycleA);
             result.Should().ContainEquivalentOf(cycleB);
             result.Should().ContainEquivalentOf(cycleC);
-            result.Should().ContainEquivalentOf(cycleD);
-            result.Should().ContainEquivalentOf(cycleE);
-            result.Should().HaveCount(5);
+            result.Should().HaveCount(3);
         }
 
         [Test]
