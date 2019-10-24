@@ -15,3 +15,9 @@ A GC-friendly graph theory library for C# intended for use with games.
 ## Notes
 
 `Graph` algorithms return lazy enumerators to avoid creating GC pressure. If you wish to hang on to the results of an evaluation, make sure to call `ToArray()` or `ToList()` on the IEnumerable.
+
+### TODO
+
+* Prim Minimum Spanning Tree
+* Kruskal Minimum Spanning Tree
+* Undirected Weighted Multigraph
