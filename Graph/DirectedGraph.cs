@@ -22,13 +22,7 @@ namespace MoonTools.Core.Graph
 
         public virtual void AddEdge(TNode v, TNode u, TEdgeData edgeData)
         {
-            CheckNodes(v, u);
-
-            if (v.Equals(u)) { throw new ArgumentException("Self-edges are not allowed in a simple graph. Use a multigraph instead"); }
-
-            neighbors[v].Add(u);
-            edges.Add((v, u));
-            edgeToEdgeData.Add((v, u), edgeData);
+            BaseAddEdge(v, u, edgeData);
         }
 
         public virtual void AddEdges(params (TNode, TNode, TEdgeData)[] edges)

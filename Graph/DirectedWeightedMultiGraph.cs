@@ -6,47 +6,15 @@ using MoreLinq;
 
 namespace MoonTools.Core.Graph
 {
-    public class DirectedWeightedMultiGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
+    public class DirectedWeightedMultiGraph<TNode, TEdgeData> : MultiGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
     {
-        protected HashSet<TNode> nodes = new HashSet<TNode>();
-        protected Dictionary<TNode, HashSet<TNode>> neighbors = new Dictionary<TNode, HashSet<TNode>>();
-        protected Dictionary<(TNode, TNode), HashSet<Guid>> edges = new Dictionary<(TNode, TNode), HashSet<Guid>>();
-        protected Dictionary<Guid, (TNode, TNode)> IDToEdge = new Dictionary<Guid, (TNode, TNode)>();
         protected Dictionary<Guid, int> weights = new Dictionary<Guid, int>();
-        protected Dictionary<Guid, TEdgeData> edgeToEdgeData = new Dictionary<Guid, TEdgeData>();
 
-        public IEnumerable<TNode> Nodes => nodes;
-
-        public void AddNode(TNode node)
+        public Guid AddEdge(TNode v, TNode u, int weight, TEdgeData data)
         {
-            if (Exists(node)) { return; }
-
-            nodes.Add(node);
-            neighbors[node] = new HashSet<TNode>();
-        }
-
-        public void AddNodes(params TNode[] nodes)
-        {
-            foreach (var node in nodes)
-            {
-                AddNode(node);
-            }
-        }
-
-        public void AddEdge(TNode v, TNode u, int weight, TEdgeData data)
-        {
-            CheckNodes(v, u);
-
-            var id = Guid.NewGuid();
-            neighbors[v].Add(u);
+            var id = BaseAddEdge(v, u, data);
             weights.Add(id, weight);
-            if (!edges.ContainsKey((v, u)))
-            {
-                edges[(v, u)] = new HashSet<Guid>();
-            }
-            edges[(v, u)].Add(id);
-            edgeToEdgeData.Add(id, data);
-            IDToEdge.Add(id, (v, u));
+            return id;
         }
 
         public void AddEdges(params (TNode, TNode, int, TEdgeData)[] edges)
@@ -57,61 +25,16 @@ namespace MoonTools.Core.Graph
             }
         }
 
-        public void Clear()
+        public override void Clear()
         {
-            nodes.Clear();
-            neighbors.Clear();
+            base.Clear();
             weights.Clear();
-            edges.Clear();
-            IDToEdge.Clear();
-            edgeToEdgeData.Clear();
-        }
-
-        private void CheckNodes(params TNode[] givenNodes)
-        {
-            foreach (var node in givenNodes)
-            {
-                if (!Exists(node))
-                {
-                    throw new ArgumentException($"Vertex {node} does not exist in the graph");
-                }
-            }
-        }
-
-        public IEnumerable<Guid> EdgeIDs(TNode v, TNode u)
-        {
-            CheckNodes(v, u);
-            return edges.ContainsKey((v, u)) ? edges[(v, u)] : Enumerable.Empty<Guid>();
-        }
-
-        public bool Exists(TNode node) => nodes.Contains(node);
-
-        public bool Exists(TNode v, TNode u)
-        {
-            CheckNodes(v, u);
-            return edges.ContainsKey((v, u));
-        }
-
-        public IEnumerable<TNode> Neighbors(TNode node)
-        {
-            CheckNodes(node);
-            return neighbors.ContainsKey(node) ? neighbors[node] : Enumerable.Empty<TNode>();
         }
 
         public IEnumerable<int> Weights(TNode v, TNode u)
         {
             CheckNodes(v, u);
             return edges[(v, u)].Select(id => weights[id]);
-        }
-
-        public TEdgeData EdgeData(Guid id)
-        {
-            if (!edgeToEdgeData.ContainsKey(id))
-            {
-                throw new ArgumentException($"Edge {id} does not exist in the graph.");
-            }
-
-            return edgeToEdgeData[id];
         }
 
         private IEnumerable<Guid> ReconstructPath(PooledDictionary<TNode, Guid> cameFrom, TNode currentNode)
