@@ -221,5 +221,48 @@ namespace Tests
             // have to call Count() because otherwise the lazy evaluation wont trigger
             myGraph.Invoking(x => x.AStarShortestPath('a', 'z', (x, y) => 1).Count()).Should().Throw<System.ArgumentException>();
         }
+
+        [Test]
+        public void DijkstraSingleSourceShortestPath()
+        {
+            var run = new MoveTypeEdgeData { moveType = MoveType.Run };
+            var jump = new MoveTypeEdgeData { moveType = MoveType.Jump };
+            var wallJump = new MoveTypeEdgeData { moveType = MoveType.WallJump };
+
+            var myGraph = new DirectedWeightedGraph<char, MoveTypeEdgeData>();
+            myGraph.AddNodes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h');
+            myGraph.AddEdges(
+                ('a', 'b', 2, run),
+                ('a', 'c', 3, run),
+                ('a', 'e', 4, wallJump),
+                ('b', 'd', 2, jump),
+                ('b', 'e', 1, run),
+                ('c', 'g', 4, jump),
+                ('c', 'h', 11, run),
+                ('d', 'c', 3, jump),
+                ('d', 'f', 2, run),
+                ('d', 'h', 3, wallJump),
+                ('e', 'f', 5, run),
+                ('f', 'd', 2, run),
+                ('f', 'h', 6, wallJump),
+                ('g', 'h', 7, run),
+                ('h', 'f', 1, jump)
+            );
+
+            myGraph
+                .DijkstraSingleSourceShortestPath('a')
+                .Should()
+                .Contain(('b', 'a', 2)).And
+                .Contain(('c', 'a', 3)).And
+                .Contain(('d', 'b', 4)).And
+                .Contain(('e', 'b', 3)).And
+                .Contain(('f', 'd', 6)).And
+                .Contain(('g', 'c', 7)).And
+                .Contain(('h', 'd', 7)).And
+                .HaveCount(7);
+
+            // have to call Count() because otherwise the lazy evaluation wont trigger
+            myGraph.Invoking(x => x.DijkstraSingleSourceShortestPath('z').Count()).Should().Throw<System.ArgumentException>();
+        }
     }
 }

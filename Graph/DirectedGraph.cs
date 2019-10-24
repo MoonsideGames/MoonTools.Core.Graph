@@ -224,10 +224,10 @@ namespace MoonTools.Core.Graph
             }
             sccs.Clear();
 
-            var preorder = new PooledDictionary<TNode, uint>();
-            var lowlink = new PooledDictionary<TNode, uint>();
-            var sccFound = new PooledDictionary<TNode, bool>();
-            var sccQueue = new PooledStack<TNode>();
+            var preorder = new PooledDictionary<TNode, uint>(ClearMode.Always);
+            var lowlink = new PooledDictionary<TNode, uint>(ClearMode.Always);
+            var sccFound = new PooledDictionary<TNode, bool>(ClearMode.Always);
+            var sccQueue = new PooledStack<TNode>(ClearMode.Always);
 
             uint preorderCounter = 0;
 
@@ -280,7 +280,7 @@ namespace MoonTools.Core.Graph
                             if (lowlink[v] == preorder[v])
                             {
                                 sccFound[v] = true;
-                                var scc = new PooledList<TNode>
+                                var scc = new PooledList<TNode>(ClearMode.Always)
                                 {
                                     v
                                 };

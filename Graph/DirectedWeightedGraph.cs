@@ -112,5 +112,50 @@ namespace MoonTools.Core.Graph
 
             yield break;
         }
+
+        public IEnumerable<(TNode, TNode, int)> DijkstraSingleSourceShortestPath(TNode source)
+        {
+            CheckNodes(source);
+
+            var distance = new PooledDictionary<TNode, int>(ClearMode.Always);
+            var previous = new PooledDictionary<TNode, TNode>(ClearMode.Always);
+
+            foreach (var node in Nodes)
+            {
+                distance[node] = int.MaxValue;
+            }
+
+            distance[source] = 0;
+
+            var q = Nodes.ToPooledList();
+
+            while (q.Count > 0)
+            {
+                var node = q.MinBy(n => distance[n]).First();
+                q.Remove(node);
+                if (distance[node] == int.MaxValue) { break; }
+
+                foreach (var neighbor in Neighbors(node))
+                {
+                    var alt = distance[node] + Weight(node, neighbor);
+                    if (alt < distance[neighbor])
+                    {
+                        distance[neighbor] = alt;
+                        previous[neighbor] = node;
+                    }
+                }
+            }
+
+            foreach (var node in Nodes)
+            {
+                if (!node.Equals(source))
+                {
+                    yield return (node, previous[node], distance[node]);
+                }
+            }
+
+            distance.Dispose();
+            previous.Dispose();
+        }
     }
 }

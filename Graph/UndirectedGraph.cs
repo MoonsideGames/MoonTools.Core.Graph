@@ -32,9 +32,9 @@ namespace MoonTools.Core.Graph
         {
             get
             {
-                var colors = new PooledDictionary<TNode, Color>();
-                var d = new PooledDictionary<TNode, int>();
-                var partition = new PooledDictionary<TNode, int>();
+                var colors = new PooledDictionary<TNode, Color>(ClearMode.Always);
+                var d = new PooledDictionary<TNode, int>(ClearMode.Always);
+                var partition = new PooledDictionary<TNode, int>(ClearMode.Always);
 
                 foreach (var node in Nodes)
                 {
@@ -48,7 +48,7 @@ namespace MoonTools.Core.Graph
                 partition[start] = 1;
                 d[start] = 0;
 
-                var stack = new PooledStack<TNode>();
+                var stack = new PooledStack<TNode>(ClearMode.Always);
                 stack.Push(start);
 
                 while (stack.Count > 0)
