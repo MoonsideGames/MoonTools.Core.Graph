@@ -15,6 +15,7 @@ namespace MoonTools.Core.Graph
         protected void BaseAddEdge(TNode v, TNode u, TEdgeData edgeData)
         {
             CheckNodes(v, u);
+            if (Exists(v, u)) { throw new ArgumentException($"Edge between {v} and {u} already exists in the graph"); }
 
             if (v.Equals(u)) { throw new ArgumentException("Self-edges are not allowed in a simple graph. Use a multigraph instead"); }
 

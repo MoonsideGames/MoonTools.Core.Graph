@@ -10,13 +10,13 @@ namespace MoonTools.Core.Graph
     {
         protected Dictionary<(TNode, TNode), int> weights = new Dictionary<(TNode, TNode), int>();
 
-        public void AddEdge(TNode v, TNode u, int weight, TEdgeData edgeData)
+        public virtual void AddEdge(TNode v, TNode u, int weight, TEdgeData edgeData)
         {
             BaseAddEdge(v, u, edgeData);
             weights.Add((v, u), weight);
         }
 
-        public void AddEdges(params (TNode, TNode, int weight, TEdgeData)[] edges)
+        public virtual void AddEdges(params (TNode, TNode, int weight, TEdgeData)[] edges)
         {
             foreach (var edge in edges)
             {

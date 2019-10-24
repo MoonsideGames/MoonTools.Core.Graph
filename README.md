@@ -10,6 +10,7 @@ A GC-friendly graph theory library for C# intended for use with games.
 * Directed Weighted
 * Directed Weighted Multigraph
 * Undirected
+* Undirected Weighted
 
 ## Notes
 

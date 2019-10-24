@@ -40,6 +40,8 @@ namespace Tests
             myGraph.AddEdge(5, 6, dummyEdgeData);
 
             Assert.That(myGraph.Neighbors(5), Does.Contain(6));
+
+            myGraph.Invoking(x => x.AddEdge(5, 6, dummyEdgeData)).Should().Throw<ArgumentException>();
         }
 
         [Test]
