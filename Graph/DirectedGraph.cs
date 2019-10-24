@@ -280,7 +280,7 @@ namespace MoonTools.Core.Graph
 
                         s.Remove(neighbor);
                         t.Add(neighbor);
-                        if (s.Count == 0) { lexicographicSets.Remove(s); replacedSets.Remove(s); }
+                        if (s.Count == 0) { lexicographicSets.Remove(s); replacedSets.Remove(s); s.Dispose(); }
                     }
                 }
             }
@@ -298,20 +298,20 @@ namespace MoonTools.Core.Graph
         {
             return PostorderNodeDFS().Reverse();
         }
-
-        readonly Dictionary<TNode, uint> preorder = new Dictionary<TNode, uint>();
-        readonly Dictionary<TNode, uint> lowlink = new Dictionary<TNode, uint>();
-        readonly Dictionary<TNode, bool> sccFound = new Dictionary<TNode, bool>();
-        readonly Stack<TNode> sccQueue = new Stack<TNode>();
-        readonly List<List<TNode>> sccResult = new List<List<TNode>>();
+        List<PooledList<TNode>> sccs = new List<PooledList<TNode>>();
 
         public IEnumerable<IEnumerable<TNode>> StronglyConnectedComponents()
         {
-            preorder.Clear();
-            lowlink.Clear();
-            sccFound.Clear();
-            sccQueue.Clear();
-            sccResult.Clear();
+            foreach (var scc in sccs)
+            {
+                scc.Dispose();
+            }
+            sccs.Clear();
+
+            var preorder = new PooledDictionary<TNode, uint>();
+            var lowlink = new PooledDictionary<TNode, uint>();
+            var sccFound = new PooledDictionary<TNode, bool>();
+            var sccQueue = new PooledStack<TNode>();
 
             uint preorderCounter = 0;
 
@@ -364,7 +364,7 @@ namespace MoonTools.Core.Graph
                             if (lowlink[v] == preorder[v])
                             {
                                 sccFound[v] = true;
-                                var scc = new List<TNode>
+                                var scc = new PooledList<TNode>
                                 {
                                     v
                                 };
@@ -374,7 +374,9 @@ namespace MoonTools.Core.Graph
                                     sccFound[k] = true;
                                     scc.Add(k);
                                 }
-                                sccResult.Add(scc);
+
+                                sccs.Add(scc);
+                                yield return scc;
                             }
                             else
                             {
@@ -384,8 +386,6 @@ namespace MoonTools.Core.Graph
                     }
                 }
             }
-
-            return sccResult;
         }
 
         public IEnumerable<IEnumerable<TNode>> SimpleCycles()

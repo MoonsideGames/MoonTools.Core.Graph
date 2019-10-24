@@ -218,7 +218,8 @@ namespace Tests
                 .And
                 .HaveCount(3);
 
-            myGraph.Invoking(x => x.AStarShortestPath('a', 'z', (x, y) => 15)).Should().Throw<System.ArgumentException>();
+            // have to call Count() because otherwise the lazy evaluation wont trigger
+            myGraph.Invoking(x => x.AStarShortestPath('a', 'z', (x, y) => 1).Count()).Should().Throw<System.ArgumentException>();
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Collections.Pooled;
 using MoreLinq;
 
 namespace MoonTools.Core.Graph
@@ -11,13 +12,6 @@ namespace MoonTools.Core.Graph
         protected Dictionary<TNode, HashSet<TNode>> neighbors = new Dictionary<TNode, HashSet<TNode>>();
         protected Dictionary<(TNode, TNode), TEdgeData> edgeToEdgeData = new Dictionary<(TNode, TNode), TEdgeData>();
         protected Dictionary<(TNode, TNode), int> weights = new Dictionary<(TNode, TNode), int>();
-
-        // store search sets to prevent GC
-        protected HashSet<TNode> openSet = new HashSet<TNode>();
-        protected HashSet<TNode> closedSet = new HashSet<TNode>();
-        protected Dictionary<TNode, int> gScore = new Dictionary<TNode, int>();
-        protected Dictionary<TNode, int> fScore = new Dictionary<TNode, int>();
-        protected Dictionary<TNode, TNode> cameFrom = new Dictionary<TNode, TNode>();
 
         public IEnumerable<TNode> Nodes => nodes;
 
@@ -107,7 +101,7 @@ namespace MoonTools.Core.Graph
             return edgeToEdgeData[(v, u)];
         }
 
-        private IEnumerable<(TNode, TNode)> ReconstructPath(Dictionary<TNode, TNode> cameFrom, TNode currentNode)
+        private IEnumerable<(TNode, TNode)> ReconstructPath(PooledDictionary<TNode, TNode> cameFrom, TNode currentNode)
         {
             while (cameFrom.ContainsKey(currentNode))
             {
@@ -121,11 +115,11 @@ namespace MoonTools.Core.Graph
         {
             CheckNodes(start, end);
 
-            openSet.Clear();
-            closedSet.Clear();
-            gScore.Clear();
-            fScore.Clear();
-            cameFrom.Clear();
+            var openSet = new PooledSet<TNode>(ClearMode.Always);
+            var closedSet = new PooledSet<TNode>(ClearMode.Always);
+            var gScore = new PooledDictionary<TNode, int>(ClearMode.Always);
+            var fScore = new PooledDictionary<TNode, int>(ClearMode.Always);
+            var cameFrom = new PooledDictionary<TNode, TNode>(ClearMode.Always);
 
             openSet.Add(start);
 
@@ -138,7 +132,19 @@ namespace MoonTools.Core.Graph
 
                 if (currentNode.Equals(end))
                 {
-                    return ReconstructPath(cameFrom, currentNode).Reverse();
+                    openSet.Dispose();
+                    closedSet.Dispose();
+                    gScore.Dispose();
+                    fScore.Dispose();
+
+                    foreach (var edge in ReconstructPath(cameFrom, currentNode).Reverse())
+                    {
+                        yield return edge;
+                    }
+
+                    cameFrom.Dispose();
+
+                    yield break;
                 }
 
                 openSet.Remove(currentNode);
@@ -163,7 +169,13 @@ namespace MoonTools.Core.Graph
                 }
             }
 
-            return Enumerable.Empty<(TNode, TNode)>();
+            openSet.Dispose();
+            closedSet.Dispose();
+            gScore.Dispose();
+            fScore.Dispose();
+            cameFrom.Dispose();
+
+            yield break;
         }
     }
 }

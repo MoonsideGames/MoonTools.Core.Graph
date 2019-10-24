@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Collections.Pooled;
 using MoreLinq;
 
 namespace MoonTools.Core.Graph
@@ -120,7 +121,7 @@ namespace MoonTools.Core.Graph
             return edgeToEdgeData[id];
         }
 
-        private IEnumerable<Guid> ReconstructPath(Dictionary<TNode, Guid> cameFrom, TNode currentNode)
+        private IEnumerable<Guid> ReconstructPath(PooledDictionary<TNode, Guid> cameFrom, TNode currentNode)
         {
             while (cameFrom.ContainsKey(currentNode))
             {
@@ -135,11 +136,11 @@ namespace MoonTools.Core.Graph
         {
             CheckNodes(start, end);
 
-            openSet.Clear();
-            closedSet.Clear();
-            gScore.Clear();
-            fScore.Clear();
-            cameFrom.Clear();
+            var openSet = new PooledSet<TNode>(ClearMode.Always);
+            var closedSet = new PooledSet<TNode>(ClearMode.Always);
+            var gScore = new PooledDictionary<TNode, int>(ClearMode.Always);
+            var fScore = new PooledDictionary<TNode, int>(ClearMode.Always);
+            var cameFrom = new PooledDictionary<TNode, Guid>(ClearMode.Always);
 
             openSet.Add(start);
 
@@ -152,7 +153,19 @@ namespace MoonTools.Core.Graph
 
                 if (currentNode.Equals(end))
                 {
-                    return ReconstructPath(cameFrom, currentNode).Reverse();
+                    openSet.Dispose();
+                    closedSet.Dispose();
+                    gScore.Dispose();
+                    fScore.Dispose();
+
+                    foreach (var edgeID in ReconstructPath(cameFrom, currentNode).Reverse())
+                    {
+                        yield return edgeID;
+                    }
+
+                    cameFrom.Dispose();
+
+                    yield break;
                 }
 
                 openSet.Remove(currentNode);
@@ -178,7 +191,13 @@ namespace MoonTools.Core.Graph
                 }
             }
 
-            return Enumerable.Empty<Guid>();
+            openSet.Dispose();
+            closedSet.Dispose();
+            gScore.Dispose();
+            fScore.Dispose();
+            cameFrom.Dispose();
+
+            yield break;
         }
     }
 }
