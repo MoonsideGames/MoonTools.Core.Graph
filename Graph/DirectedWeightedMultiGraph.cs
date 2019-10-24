@@ -63,7 +63,7 @@ namespace MoonTools.Core.Graph
             gScore[start] = 0;
             fScore[start] = heuristic(start, end);
 
-            while (openSet.Any())
+            while (openSet.Count > 0)
             {
                 var currentNode = openSet.MinBy(node => fScore[node]).First();
 

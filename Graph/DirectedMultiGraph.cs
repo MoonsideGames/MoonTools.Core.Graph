@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace MoonTools.Core.Graph
 {
     public class DirectedMultiGraph<TNode, TEdgeData> : MultiGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
