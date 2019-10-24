@@ -5,7 +5,7 @@ using Collections.Pooled;
 
 namespace MoonTools.Core.Graph
 {
-    public class DirectedGraph<TNode, TEdgeData> : SimpleGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
+    public class DirectedGraph<TNode, TEdgeData> : SimpleGraph<TNode, TEdgeData>, IUnweightedGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
     {
         private class SimpleCycleComparer : IEqualityComparer<IEnumerable<TNode>>
         {

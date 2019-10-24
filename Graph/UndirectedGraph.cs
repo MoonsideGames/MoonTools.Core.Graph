@@ -4,7 +4,7 @@ using Collections.Pooled;
 
 namespace MoonTools.Core.Graph
 {
-    public class UndirectedGraph<TNode, TEdgeData> : DirectedGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
+    public class UndirectedGraph<TNode, TEdgeData> : DirectedGraph<TNode, TEdgeData>, IUnweightedGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
     {
         enum Color { White, Gray, Black }
 

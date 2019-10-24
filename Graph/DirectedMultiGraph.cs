@@ -1,6 +1,6 @@
 namespace MoonTools.Core.Graph
 {
-    public class DirectedMultiGraph<TNode, TEdgeData> : MultiGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
+    public class DirectedMultiGraph<TNode, TEdgeData> : MultiGraph<TNode, TEdgeData>, IUnweightedGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
     {
         public void AddEdge(TNode v, TNode u, TEdgeData edgeData)
         {

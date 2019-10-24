@@ -18,6 +18,8 @@ A GC-friendly graph theory library for C# intended for use with games.
 
 ### TODO
 
+* change Neighbors tests to use Equal instead of Contains
+* change Edge id from a Guid to an integer index on the edge
 * Prim Minimum Spanning Tree
 * Kruskal Minimum Spanning Tree
 * Undirected Weighted Multigraph

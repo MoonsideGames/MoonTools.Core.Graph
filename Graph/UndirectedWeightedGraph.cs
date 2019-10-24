@@ -1,6 +1,6 @@
 namespace MoonTools.Core.Graph
 {
-    public class UndirectedWeightedGraph<TNode, TEdgeData> : DirectedWeightedGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
+    public class UndirectedWeightedGraph<TNode, TEdgeData> : DirectedWeightedGraph<TNode, TEdgeData>, IWeightedGraph<TNode, TEdgeData> where TNode : System.IEquatable<TNode>
     {
         public override void AddEdge(TNode v, TNode u, int weight, TEdgeData edgeData)
         {

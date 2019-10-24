@@ -6,7 +6,7 @@ using MoreLinq;
 
 namespace MoonTools.Core.Graph
 {
-    public class DirectedWeightedMultiGraph<TNode, TEdgeData> : MultiGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
+    public class DirectedWeightedMultiGraph<TNode, TEdgeData> : MultiGraph<TNode, TEdgeData>, IWeightedMultiGraph<TNode, TEdgeData> where TNode : IEquatable<TNode>
     {
         protected Dictionary<Guid, int> weights = new Dictionary<Guid, int>();
 
