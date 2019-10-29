@@ -1,5 +1,8 @@
 # MoonTools.Core.Graph
 
+[![NuGet Badge](https://buildstats.info/nuget/MoonTools.Core.Graph)](https://www.nuget.org/packages/MoonTools.Core.Graph/)
+[![CircleCI](https://circleci.com/gh/MoonsideGames/MoonTools.Core.Graph.svg?style=svg)](https://circleci.com/gh/MoonsideGames/MoonTools.Core.Graph)
+
 A GC-friendly graph theory library for C# intended for use with games.
 
 ## Usage
